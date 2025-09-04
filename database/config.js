@@ -25,6 +25,7 @@ class DatabaseManager {
 
             // Handle Render's DATABASE_URL if provided
             if (process.env.DATABASE_URL) {
+                console.log('🔗 Using DATABASE_URL from environment');
                 const url = require('url').parse(process.env.DATABASE_URL);
                 config.host = url.hostname;
                 config.port = url.port;
@@ -32,6 +33,10 @@ class DatabaseManager {
                 config.user = url.auth.split(':')[0];
                 config.password = url.auth.split(':')[1];
                 config.ssl = { rejectUnauthorized: false };
+                console.log(`🔗 Connecting to: ${config.host}:${config.port}/${config.database}`);
+            } else {
+                console.log('⚠️  No DATABASE_URL found, using individual environment variables');
+                console.log(`🔗 Connecting to: ${config.host}:${config.port}/${config.database}`);
             }
 
             this.pool = new Pool(config);

@@ -23,7 +23,11 @@ class WebSocketClient {
         this.isConnecting = true;
         
         try {
-            const wsUrl = `ws://localhost:8081?token=${encodeURIComponent(this.token)}`;
+            // Use production WebSocket URL if available, otherwise fallback to localhost
+            const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+            const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsHost = isProduction ? window.location.hostname : 'localhost:8081';
+            const wsUrl = `${wsProtocol}//${wsHost}?token=${encodeURIComponent(this.token)}`;
             console.log('🔌 Connecting to WebSocket server:', wsUrl);
             
             this.ws = new WebSocket(wsUrl);

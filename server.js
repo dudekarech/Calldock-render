@@ -36,20 +36,20 @@ const companyRegistrationRoutes = require('./routes/company-registrations');
 const authRoutes = require('./routes/auth');
 
 // Security middleware - simplified for frontend testing
-app.use(helmet({
-    contentSecurityPolicy: {
-        directives: {
-            defaultSrc: ["'self'"],
-            styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.tailwindcss.com", "https://cdnjs.cloudflare.com"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.tailwindcss.com", "https://cdn.jsdelivr.net"],
-            scriptSrcAttr: ["'unsafe-inline'"],
-            imgSrc: ["'self'", "data:", "https:"],
-            connectSrc: ["'self'", "ws:", "wss:", "http://localhost:8081"],
-            mediaSrc: ["'self'", "blob:", "https:"],
-            fontSrc: ["'self'", "https://cdnjs.cloudflare.com"],
-        },
-    },
-}));
+        app.use(helmet({
+            contentSecurityPolicy: {
+                directives: {
+                    defaultSrc: ["'self'"],
+                    styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.tailwindcss.com", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com"],
+                    scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.tailwindcss.com", "https://cdn.jsdelivr.net"],
+                    scriptSrcAttr: ["'unsafe-inline'"],
+                    imgSrc: ["'self'", "data:", "https:"],
+                    connectSrc: ["'self'", "ws:", "wss:", "http://localhost:8081", "wss://*.onrender.com", "https://*.onrender.com"],
+                    mediaSrc: ["'self'", "blob:", "https:"],
+                    fontSrc: ["'self'", "https://cdnjs.cloudflare.com", "https://fonts.gstatic.com", "https://fonts.googleapis.com"],
+                },
+            },
+        }));
 
 // Rate limiting
 const limiter = rateLimit({

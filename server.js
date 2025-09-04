@@ -10,7 +10,7 @@ require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const HOST = process.env.HOST || 'localhost';
+const HOST = process.env.HOST || (process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost');
 
 // Import database configuration
 const databaseManager = require('./database/config');
@@ -206,6 +206,34 @@ async function startServer() {
         console.log('🗄️ Connecting to database...');
         await databaseManager.connect();
         console.log('✅ Database connected successfully');
+        
+        // Initialize database schema if needed
+        try {
+            const tables = await databaseManager.query(`
+                SELECT table_name 
+                FROM information_schema.tables 
+                WHERE table_schema = 'public' AND table_name = 'users'
+            `);
+            
+            if (tables.rows.length === 0) {
+                console.log('🔧 Database schema not found, initializing...');
+                const initDatabase = require('./scripts/init-database');
+                await initDatabase();
+                console.log('✅ Database schema initialized successfully');
+            } else {
+                console.log('✅ Database schema already exists');
+            }
+        } catch (error) {
+            console.log('⚠️ Database schema check failed, attempting initialization...');
+            try {
+                const initDatabase = require('./scripts/init-database');
+                await initDatabase();
+                console.log('✅ Database schema initialized successfully');
+            } catch (initError) {
+                console.error('❌ Database schema initialization failed:', initError.message);
+                // Continue anyway - the app might still work
+            }
+        }
         
         // Test database health
         const dbHealth = await databaseManager.healthCheck();

@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IVR Flow Builder - CallDocker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .flow-element {
+            cursor: grab;
+            transition: all 0.2s ease;
+        }
+        .flow-element:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        .flow-element:active {
+            cursor: grabbing;
+        }
+        .flow-node {
+            user-select: none;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-phone-alt text-indigo-600 text-2xl"></i>
+                    <h1 class="text-2xl font-bold text-gray-900">IVR Flow Builder</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="/admin" class="text-gray-600 hover:text-gray-900">
+                        <i class="fas fa-arrow-left mr-2"></i>Back to Admin
+                    </a>
+                    <button id="save-flow-btn" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
+                        <i class="fas fa-save mr-2"></i>Save Flow
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <!-- Tabs -->
+        <div class="border-b border-gray-200 mb-6">
+            <nav class="-mb-px flex space-x-8">
+                <button data-tab="flows" class="tab-button py-2 px-1 border-b-2 border-indigo-600 text-indigo-600 font-medium text-sm">
+                    <i class="fas fa-project-diagram mr-2"></i>IVR Flows
+                </button>
+                <button data-tab="content" class="tab-button py-2 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 font-medium text-sm">
+                    <i class="fas fa-folder-open mr-2"></i>Content Library
+                </button>
+                <button data-tab="rules" class="tab-button py-2 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 font-medium text-sm">
+                    <i class="fas fa-route mr-2"></i>Routing Rules
+                </button>
+                <button data-tab="analytics" class="tab-button py-2 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 font-medium text-sm">
+                    <i class="fas fa-chart-bar mr-2"></i>Analytics
+                </button>
+            </nav>
+        </div>
+
+        <!-- IVR Flows Tab -->
+        <div id="flows-tab" class="tab-content active">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-semibold text-gray-900">IVR Flow Builder</h2>
+                <button id="create-flow-btn" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition">
+                    <i class="fas fa-plus mr-2"></i>Create New Flow
+                </button>
+            </div>
+            
+            <!-- Flow Builder Canvas -->
+            <div class="ivr-flow-builder rounded-lg border-2 border-dashed border-gray-300 p-6">
+                <div id="flow-canvas" class="relative min-h-[500px] bg-white rounded-lg border bg-gray-50">
+                    <!-- Flow nodes will be added here dynamically -->
+                </div>
+                
+                <!-- Element Palette -->
+                <div class="mt-6">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">IVR Elements</h3>
+                    <div class="flex space-x-4">
+                        <div class="flow-element bg-blue-100 p-4 rounded-lg border-2 border-blue-300 text-center" data-type="audio">
+                            <i class="fas fa-microphone text-blue-600 text-2xl mb-2"></i>
+                            <p class="text-sm font-medium text-blue-800">Audio Prompt</p>
+                        </div>
+                        <div class="flow-element bg-green-100 p-4 rounded-lg border-2 border-green-300 text-center" data-type="video">
+                            <i class="fas fa-video text-green-600 text-2xl mb-2"></i>
+                            <p class="text-sm font-medium text-green-800">Video Content</p>
+                        </div>
+                        <div class="flow-element bg-purple-100 p-4 rounded-lg border-2 border-purple-300 text-center" data-type="menu">
+                            <i class="fas fa-list text-purple-600 text-2xl mb-2"></i>
+                            <p class="text-sm font-medium text-purple-800">Menu Options</p>
+                        </div>
+                        <div class="flow-element bg-orange-100 p-4 rounded-lg border-2 border-orange-300 text-center" data-type="transfer">
+                            <i class="fas fa-user text-orange-600 text-2xl mb-2"></i>
+                            <p class="text-sm font-medium text-orange-800">Agent Transfer</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Flows List -->
+            <div class="mt-8">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Existing Flows</h3>
+                <div id="flows-list" class="grid gap-4">
+                    <!-- Flows will be loaded here dynamically -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Content Library Tab -->
+        <div id="content-tab" class="tab-content">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-semibold text-gray-900">Content Library</h2>
+                <div class="flex space-x-4">
+                    <label for="content-upload" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition cursor-pointer">
+                        <i class="fas fa-upload mr-2"></i>Upload Content
+                    </label>
+                    <input type="file" id="content-upload" class="hidden" accept="audio/*,video/*,image/*">
+                </div>
+            </div>
+            
+            <div class="grid gap-4" id="content-library">
+                <!-- Content items will be loaded here dynamically -->
+            </div>
+        </div>
+
+        <!-- Routing Rules Tab -->
+        <div id="rules-tab" class="tab-content">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-semibold text-gray-900">Routing Rules</h2>
+                <button class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition">
+                    <i class="fas fa-plus mr-2"></i>Create Rule
+                </button>
+            </div>
+            
+            <div class="bg-white rounded-lg border border-gray-200 p-6">
+                <p class="text-gray-600">Routing rules configuration will be implemented here.</p>
+            </div>
+        </div>
+
+        <!-- Analytics Tab -->
+        <div id="analytics-tab" class="tab-content">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-semibold text-gray-900">IVR Analytics</h2>
+                <div class="flex space-x-2">
+                    <select class="border border-gray-300 rounded-lg px-3 py-2">
+                        <option>Last 7 days</option>
+                        <option>Last 30 days</option>
+                        <option>Last 90 days</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div id="analytics-summary">
+                <!-- Analytics will be loaded here dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/js/ivr-dashboard.js"></script>
+    <script>
+        // Initialize tabs
+        document.addEventListener('DOMContentLoaded', function() {
+            const tabs = document.querySelectorAll('[data-tab]');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const targetTab = this.getAttribute('data-tab');
+                    
+                    // Hide all tab contents
+                    tabContents.forEach(content => {
+                        content.classList.remove('active');
+                    });
+                    
+                    // Remove active class from all tabs
+                    tabs.forEach(t => {
+                        t.classList.remove('border-indigo-600', 'text-indigo-600');
+                        t.classList.add('border-transparent', 'text-gray-500');
+                    });
+                    
+                    // Show selected tab content
+                    const selectedContent = document.getElementById(targetTab + '-tab');
+                    if (selectedContent) {
+                        selectedContent.classList.add('active');
+                    }
+                    
+                    // Activate selected tab
+                    this.classList.remove('border-transparent', 'text-gray-500');
+                    this.classList.add('border-indigo-600', 'text-indigo-600');
+                });
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,1851 @@
+<!DOCTYPE html>
+<!-- 
+================================================================================
+CHECKPOINT: 2-WAY AUDIO WORKING - DO NOT MODIFY CORE CALL FUNCTIONALITY
+================================================================================
+Date: 2025-08-30
+Status: ✅ WORKING - 2-way audio calls established successfully
+Critical Functions:
+- WebRTC offer storage and processing
+- Agent call answering workflow
+- WebRTC answer creation and sending
+- ICE candidate handling
+
+⚠️  WARNING: This file contains the core SaaS call functionality.
+    Any modifications to WebRTC or WebSocket handling must be tested
+    thoroughly to ensure audio calls continue working.
+================================================================================
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CallDocker Agent Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="min-h-screen flex">
+        <!-- Sidebar -->
+        <div class="bg-gray-900 text-white w-64 min-h-screen p-4">
+            <div class="mb-8">
+                <h1 class="text-2xl font-bold">CallDocker</h1>
+                <p class="text-gray-400 text-sm">Agent Dashboard</p>
+            </div>
+            
+            <nav class="space-y-2">
+                <a href="#dashboard" class="nav-item active flex items-center p-3 rounded-lg hover:bg-gray-800 transition-colors">
+                    <i class="fas fa-tachometer-alt mr-3"></i>
+                    Dashboard
+                </a>
+                <a href="#calls" class="nav-item flex items-center p-3 rounded-lg hover:bg-gray-800 transition-colors">
+                    <i class="fas fa-phone mr-3"></i>
+                    Active Calls
+                </a>
+                <a href="#queue" class="nav-item flex items-center p-3 rounded-lg hover:bg-gray-800 transition-colors">
+                    <i class="fas fa-list-ol mr-3"></i>
+                    Call Queue
+                </a>
+                <a href="#history" class="nav-item flex items-center p-3 rounded-lg hover:bg-gray-800 transition-colors">
+                    <i class="fas fa-history mr-3"></i>
+                    Call History
+                </a>
+                <a href="#profile" class="nav-item flex items-center p-3 rounded-lg hover:bg-gray-800 transition-colors">
+                    <i class="fas fa-user mr-3"></i>
+                    Profile
+                </a>
+            </nav>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-1">
+            <!-- Header -->
+            <header class="bg-white shadow-sm border-b px-6 py-4">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-semibold text-gray-900" id="pageTitle">Agent Dashboard</h2>
+                        <p class="text-sm text-gray-600" id="pageDescription">Manage your calls and customer interactions</p>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <!-- Agent Status Toggle -->
+                        <div class="flex items-center space-x-2">
+                            <span class="text-sm text-gray-600">Status:</span>
+                            <button id="statusToggle" class="bg-green-600 text-white px-3 py-1 rounded-full text-sm font-medium hover:bg-green-700 transition-colors">
+                                Available
+                            </button>
+                        </div>
+                        
+                        <!-- Notifications -->
+                        <div class="relative">
+                            <i class="fas fa-bell text-gray-600 text-xl cursor-pointer"></i>
+                            <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">2</span>
+                        </div>
+                        
+                        <!-- Agent Profile -->
+                        <div class="flex items-center space-x-2">
+                            <img src="https://ui-avatars.com/api/?name=John+Agent&background=667eea&color=fff" alt="Agent" class="w-8 h-8 rounded-full">
+                            <span class="text-sm font-medium text-gray-900">John Agent</span>
+                            <i class="fas fa-chevron-down text-gray-600 text-xs"></i>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Page Content -->
+            <main class="p-6">
+                <!-- Dashboard Content -->
+                <div id="dashboard-content" class="page-content">
+                    <!-- Quick Stats -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <div class="flex items-center">
+                                <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                                    <i class="fas fa-phone text-xl"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm font-medium text-gray-600">Today's Calls</p>
+                                    <p class="text-2xl font-semibold text-gray-900">24</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <div class="flex items-center">
+                                <div class="p-3 rounded-full bg-green-100 text-green-600">
+                                    <i class="fas fa-clock text-xl"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm font-medium text-gray-600">Avg Call Time</p>
+                                    <p class="text-2xl font-semibold text-gray-900">4m 32s</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <div class="flex items-center">
+                                <div class="p-3 rounded-full bg-purple-100 text-purple-600">
+                                    <i class="fas fa-star text-xl"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm font-medium text-gray-600">Satisfaction</p>
+                                    <p class="text-2xl font-semibold text-gray-900">4.8/5</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <div class="flex items-center">
+                                <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">
+                                    <i class="fas fa-users text-xl"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm font-medium text-gray-600">Queue Length</p>
+                                    <p class="text-2xl font-semibold text-gray-900">3</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Current Call Section -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                        <!-- Active Call -->
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Current Call</h3>
+                            <div id="currentCallInfo" class="text-center py-8">
+                                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <i class="fas fa-phone text-gray-400 text-2xl"></i>
+                                </div>
+                                <p class="text-gray-500">No active call</p>
+                                <p class="text-sm text-gray-400">You'll see call details here when connected</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Call Queue -->
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Call Queue</h3>
+                            <div id="callQueue" class="space-y-3">
+                                <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                                    <div>
+                                        <p class="font-medium text-gray-900">Sarah Johnson</p>
+                                        <p class="text-sm text-gray-600">Technical Support</p>
+                                    </div>
+                                    <span class="text-xs text-gray-500">2m ago</span>
+                                </div>
+                                <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                                    <div>
+                                        <p class="font-medium text-gray-900">Mike Chen</p>
+                                        <p class="text-sm text-gray-600">Sales Inquiry</p>
+                                    </div>
+                                    <span class="text-xs text-gray-500">5m ago</span>
+                                </div>
+                                <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                                    <div>
+                                        <p class="font-medium text-gray-900">Lisa Rodriguez</p>
+                                        <p class="text-sm text-gray-600">Billing Question</p>
+                                    </div>
+                                    <span class="text-xs text-gray-500">8m ago</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Performance Charts -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Call Volume Today</h3>
+                            <canvas id="callVolumeChart" width="400" height="200"></canvas>
+                        </div>
+                        
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Call Duration Distribution</h3>
+                            <canvas id="callDurationChart" width="400" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Other page contents will be loaded here -->
+                <div id="calls-content" class="page-content hidden">
+                    <!-- Active Calls content will be loaded -->
+                </div>
+
+                <div id="queue-content" class="page-content hidden">
+                    <!-- Call Queue content will be loaded -->
+                </div>
+
+                <div id="history-content" class="page-content hidden">
+                    <!-- Call History content will be loaded -->
+                </div>
+
+                <div id="profile-content" class="page-content hidden">
+                    <!-- Profile content will be loaded -->
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Call Controls Modal -->
+    <div id="callControlsModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3 text-center">
+                <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4">
+                    <i class="fas fa-phone text-green-600 text-2xl"></i>
+                </div>
+                <h3 class="text-lg font-medium text-gray-900 mb-2" id="callCustomerName">Customer Name</h3>
+                <p class="text-sm text-gray-500 mb-4" id="callCustomerReason">Call Reason</p>
+                
+                <div class="space-y-3 mb-6">
+                    <div class="flex justify-center space-x-3">
+                        <button id="muteBtn" class="px-4 py-2 bg-gray-600 text-white rounded-md text-sm font-medium hover:bg-gray-700">
+                            <i class="fas fa-microphone mr-2"></i>Mute
+                        </button>
+                        <button id="holdBtn" class="px-4 py-2 bg-yellow-600 text-white rounded-md text-sm font-medium hover:bg-yellow-700">
+                            <i class="fas fa-pause mr-2"></i>Hold
+                        </button>
+                    </div>
+                    
+                    <div class="flex justify-center space-x-3">
+                        <button id="transferBtn" class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700">
+                            <i class="fas fa-exchange-alt mr-2"></i>Transfer
+                        </button>
+                        <button id="endCallBtn" class="px-4 py-2 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700">
+                            <i class="fas fa-phone-slash mr-2"></i>End Call
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="text-center">
+                    <p class="text-sm text-gray-600">Call Duration: <span id="callDuration">00:00</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- WebSocket Client -->
+    <script src="js/websocket-client.js"></script>
+    
+    <script>
+        // Navigation functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const navItems = document.querySelectorAll('.nav-item');
+            const pageContents = document.querySelectorAll('.page-content');
+            const pageTitle = document.getElementById('pageTitle');
+            const pageDescription = document.getElementById('pageDescription');
+
+            // WebRTC and WebSocket variables
+            let localStream = null;
+            let peerConnection = null;
+            let remoteStream = null;
+            let isInCall = false;
+            let currentCallData = null;
+            let screenStream = null;
+            let isScreenSharing = false;
+            let websocketClient = null;
+            let currentRoomId = null;
+
+            // Initialize dashboard
+            showPage('dashboard');
+            
+            // Initialize WebSocket connection
+            initializeWebSocket();
+
+            // Navigation event listeners
+            navItems.forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Remove active class from all items
+                    navItems.forEach(nav => nav.classList.remove('active'));
+                    
+                    // Add active class to clicked item
+                    this.classList.add('active');
+                    
+                    // Get the target page from href
+                    const target = this.getAttribute('href').substring(1);
+                    showPage(target);
+                });
+            });
+
+            function showPage(pageName) {
+                // Hide all page contents
+                pageContents.forEach(content => content.classList.add('hidden'));
+                
+                // Show target page content
+                const targetContent = document.getElementById(pageName + '-content');
+                if (targetContent) {
+                    targetContent.classList.remove('hidden');
+                }
+                
+                // Update page title and description
+                updatePageInfo(pageName);
+                
+                // Load page-specific content
+                loadPageContent(pageName);
+            }
+
+            function updatePageInfo(pageName) {
+                const pageInfo = {
+                    dashboard: {
+                        title: 'Agent Dashboard',
+                        description: 'Manage your calls and customer interactions'
+                    },
+                    calls: {
+                        title: 'Active Calls',
+                        description: 'View and manage your current calls'
+                    },
+                    queue: {
+                        title: 'Call Queue',
+                        description: 'Monitor incoming calls and queue status'
+                    },
+                    history: {
+                        title: 'Call History',
+                        description: 'Review your past calls and performance'
+                    },
+                    profile: {
+                        title: 'Agent Profile',
+                        description: 'Manage your profile and settings'
+                    }
+                };
+
+                const info = pageInfo[pageName] || { title: 'Page', description: 'Page description' };
+                pageTitle.textContent = info.title;
+                pageDescription.textContent = info.description;
+            }
+
+            // WebSocket Functions
+            function initializeWebSocket() {
+                // For demo purposes, we'll use a mock token
+                // In production, this would be the agent's JWT token
+                const mockToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImFnZW50LTEiLCJyb2xlIjoiYWdlbnQiLCJjb21wYW55X2lkIjoiZGVmYXVsdCIsImlhdCI6MTY3MjU0NTY3MH0.mock_signature';
+                
+                websocketClient = new WebSocketClient(
+                    mockToken,
+                    handleWebSocketMessage,
+                    handleWebSocketConnect,
+                    handleWebSocketDisconnect
+                );
+            }
+            
+            function handleWebSocketMessage(message) {
+                console.log('📨 WebSocket message received:', message.type);
+                
+                switch (message.type) {
+                    case 'connection_established':
+                        console.log('✅ WebSocket connection established');
+                        break;
+                    case 'room_joined':
+                        console.log('🏠 Joined room:', message.roomId);
+                        break;
+                    case 'user_joined':
+                        console.log('👤 User joined room:', message.userId, 'in room:', message.roomId);
+                        break;
+                    case 'user_left':
+                        console.log('👤 User left room:', message.userId, 'from room:', message.roomId);
+                        break;
+                    case 'pong':
+                        // Heartbeat response - no action needed
+                        break;
+                    case 'webrtc_offer':
+                        handleIncomingOffer(message);
+                        break;
+                    case 'webrtc_answer':
+                        handleIncomingAnswer(message);
+                        break;
+                    case 'ice_candidate':
+                        handleIncomingICECandidate(message);
+                        break;
+                    case 'call_started':
+                        handleCallStarted(message);
+                        break;
+                    case 'call_ended':
+                        handleCallEnded(message);
+                        break;
+                    default:
+                        console.log('⚠️ Unknown message type:', message.type);
+                }
+            }
+            
+            function handleWebSocketConnect() {
+                console.log('✅ WebSocket connected');
+                // Join both agent room and public calls room to receive incoming calls
+                if (websocketClient) {
+                    websocketClient.joinRoom('agent-room');
+                    // Also join public calls room to receive incoming calls
+                    setTimeout(() => {
+                        websocketClient.joinRoom('public-calls');
+                    }, 500);
+                }
+            }
+            
+            function handleWebSocketDisconnect() {
+                console.log('🔌 WebSocket disconnected');
+            }
+            
+            // WebSocket Message Handlers
+            function handleIncomingOffer(message) {
+                console.log('📞 Received WebRTC offer:', message);
+                console.log('🔍 Debug: Current incomingCallData before storing offer:', window.incomingCallData);
+                
+                // Store the offer for when the agent answers the call
+                if (window.incomingCallData) {
+                    window.incomingCallData.offer = message.offer;
+                    console.log('✅ WebRTC offer stored for incoming call');
+                    console.log('🔍 Debug: Updated incomingCallData:', window.incomingCallData);
+                } else {
+                    // Create call data if it doesn't exist yet (offer arrived before call_started)
+                    console.log('📝 Creating call data for early WebRTC offer');
+                    window.incomingCallData = {
+                        callId: message.callId,
+                        initiatedBy: message.fromUserId,
+                        callType: 'voice', // Default to voice if not specified
+                        timestamp: new Date().toISOString(),
+                        offer: message.offer
+                    };
+                    console.log('✅ WebRTC offer stored in newly created call data');
+                    console.log('🔍 Debug: New incomingCallData:', window.incomingCallData);
+                }
+            }
+            
+            function handleIncomingAnswer(message) {
+                console.log('📞 Received WebRTC answer:', message);
+                if (peerConnection && message.answer) {
+                    try {
+                        const answer = new RTCSessionDescription(message.answer);
+                        peerConnection.setRemoteDescription(answer);
+                        console.log('✅ Remote description set successfully');
+                    } catch (error) {
+                        console.error('❌ Error setting remote description:', error);
+                    }
+                }
+            }
+            
+            function handleIncomingICECandidate(message) {
+                console.log('📞 Received ICE candidate:', message);
+                if (peerConnection && message.candidate) {
+                    try {
+                        const candidate = new RTCIceCandidate(message.candidate);
+                        peerConnection.addIceCandidate(candidate);
+                        console.log('✅ ICE candidate added successfully');
+                    } catch (error) {
+                        console.error('❌ Error adding ICE candidate:', error);
+                    }
+                }
+            }
+            
+            function handleCallStarted(message) {
+                console.log('📞 Incoming call received:', message);
+                console.log('🔍 Debug: Current incomingCallData before call_started:', window.incomingCallData);
+                
+                // Show incoming call notification
+                const { callId, initiatedBy, callType } = message;
+                
+                // Create incoming call notification
+                showIncomingCallNotification(callId, initiatedBy, callType);
+                
+                // Store call data for when agent answers, preserving any existing offer
+                const existingOffer = window.incomingCallData?.offer;
+                console.log('🔍 Debug: Existing offer found?', existingOffer ? 'YES' : 'NO');
+                
+                window.incomingCallData = {
+                    callId,
+                    initiatedBy,
+                    callType,
+                    timestamp: new Date().toISOString(),
+                    ...(existingOffer && { offer: existingOffer }) // Preserve offer if it exists
+                };
+                
+                console.log('🔍 Debug: Final incomingCallData after call_started:', window.incomingCallData);
+                
+                if (existingOffer) {
+                    console.log('✅ Preserved existing WebRTC offer in call data');
+                } else {
+                    console.log('⚠️ No existing offer found to preserve');
+                }
+            }
+            
+            function showIncomingCallNotification(callId, callerName, callType) {
+                // Remove any existing notification
+                const existingNotification = document.getElementById('incomingCallNotification');
+                if (existingNotification) {
+                    existingNotification.remove();
+                }
+                
+                const notification = document.createElement('div');
+                notification.id = 'incomingCallNotification';
+                notification.className = 'fixed top-4 right-4 bg-green-500 text-white p-4 rounded-lg shadow-lg z-50 max-w-sm';
+                notification.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="font-bold text-lg">📞 Incoming Call</h3>
+                            <p class="text-sm">From: ${callerName || 'Anonymous'}</p>
+                            <p class="text-sm">Type: ${callType || 'voice'}</p>
+                            <p class="text-xs text-green-100">Call ID: ${callId}</p>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button id="answerCallBtn" class="bg-white text-green-500 px-3 py-1 rounded text-sm font-medium hover:bg-green-50">
+                                Answer
+                            </button>
+                            <button id="rejectCallBtn" class="bg-red-500 text-white px-3 py-1 rounded text-sm font-medium hover:bg-red-600">
+                                Reject
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(notification);
+                
+                // Add event listeners to the buttons
+                const answerBtn = notification.querySelector('#answerCallBtn');
+                const rejectBtn = notification.querySelector('#rejectCallBtn');
+                
+                answerBtn.addEventListener('click', () => answerIncomingCall(callId));
+                rejectBtn.addEventListener('click', () => rejectIncomingCall(callId));
+                
+                // Auto-remove after 30 seconds if not answered
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.remove();
+                    }
+                }, 30000);
+            }
+            
+            function handleCallEnded(message) {
+                console.log('📞 Call ended:', message);
+                // End the call and clean up
+                endCall();
+            }
+            
+            // Incoming call handling functions
+            function answerIncomingCall(callId) {
+                console.log('📞 Agent answering incoming call:', callId);
+                
+                // Remove notification
+                const notification = document.getElementById('incomingCallNotification');
+                if (notification) {
+                    notification.remove();
+                }
+                
+                // Check if we have incoming call data
+                if (window.incomingCallData && window.incomingCallData.callId === callId) {
+                    const { initiatedBy, callType } = window.incomingCallData;
+                    
+                    // Start WebRTC call with the caller
+                    startIncomingCall(callId, initiatedBy, callType);
+                } else {
+                    console.error('❌ No incoming call data found for:', callId);
+                }
+            }
+            
+            function rejectIncomingCall(callId) {
+                console.log('📞 Agent rejecting incoming call:', callId);
+                
+                // Remove notification
+                const notification = document.getElementById('incomingCallNotification');
+                if (notification) {
+                    notification.remove();
+                }
+                
+                // Notify caller that call was rejected
+                if (websocketClient) {
+                    websocketClient.send({
+                        type: 'call_rejected',
+                        callId,
+                        reason: 'agent_rejected'
+                    });
+                }
+                
+                // Clear incoming call data
+                delete window.incomingCallData;
+            }
+            
+            async function startIncomingCall(callId, callerId, callType) {
+                console.log('📞 Starting incoming call with:', { callId, callerId, callType });
+                
+                try {
+                    // Get microphone and camera access
+                    localStream = await navigator.mediaDevices.getUserMedia({ 
+                        audio: true, 
+                        video: callType === 'video' ? {
+                            width: { ideal: 1280 },
+                            height: { ideal: 720 },
+                            facingMode: 'user'
+                        } : false
+                    });
+                    console.log('✅ Agent media access granted');
+                    
+                    // Create WebRTC peer connection
+                    peerConnection = new RTCPeerConnection({
+                        iceServers: [
+                            { urls: 'stun:stun.l.google.com:19302' }
+                        ]
+                    });
+                    console.log('✅ WebRTC peer connection created');
+                    
+                    // Add local stream tracks
+                    localStream.getTracks().forEach(track => {
+                        peerConnection.addTrack(track, localStream);
+                        console.log('✅ Added local track:', track.kind);
+                    });
+                    
+                    // Handle incoming tracks from caller
+                    peerConnection.ontrack = (event) => {
+                        console.log('📞 Received remote stream from caller:', event.streams[0]);
+                        remoteStream = event.streams[0];
+                        
+                        // Handle remote audio
+                        const remoteAudio = document.createElement('audio');
+                        remoteAudio.id = 'remoteAudio';
+                        remoteAudio.srcObject = remoteStream;
+                        remoteAudio.autoplay = true;
+                        remoteAudio.volume = 1.0;
+                        remoteAudio.muted = false;
+                        remoteAudio.controls = false;
+                        
+                        // Force play to overcome autoplay restrictions
+                        remoteAudio.play().catch(e => {
+                            console.log('⚠️ Audio autoplay blocked, user must interact first');
+                        });
+                        
+                        document.body.appendChild(remoteAudio);
+                        console.log('✅ Remote audio element created and playing');
+                        
+                        // Handle remote video for video calls
+                        if (callType === 'video') {
+                            setupRemoteVideo(remoteStream);
+                        }
+                    };
+                    
+                    // Handle ICE candidates
+                    peerConnection.onicecandidate = (event) => {
+                        if (event.candidate) {
+                            console.log('📤 ICE candidate generated:', event.candidate);
+                            // Send ICE candidate to caller via WebSocket
+                            if (websocketClient) {
+                                websocketClient.sendICECandidate('anonymous', event.candidate, callId);
+                            }
+                        }
+                    };
+                    
+                    // Handle connection state changes
+                    peerConnection.onconnectionstatechange = () => {
+                        console.log('🔗 Connection state changed:', peerConnection.connectionState);
+                        if (peerConnection.connectionState === 'connected') {
+                            console.log('✅ WebRTC connection established successfully!');
+                        }
+                    };
+                    
+                    // Check if we have a stored offer from the caller
+                    console.log('🔍 Debug: Checking for stored offer...');
+                    console.log('🔍 Debug: window.incomingCallData:', window.incomingCallData);
+                    console.log('🔍 Debug: offer exists?', window.incomingCallData?.offer ? 'YES' : 'NO');
+                    
+                    if (window.incomingCallData && window.incomingCallData.offer) {
+                        console.log('📞 Setting remote description from stored offer');
+                        const offer = new RTCSessionDescription(window.incomingCallData.offer);
+                        await peerConnection.setRemoteDescription(offer);
+                        console.log('✅ Remote description (offer) set successfully');
+                        
+                        // Create answer for the caller
+                        const answer = await peerConnection.createAnswer();
+                        await peerConnection.setLocalDescription(answer);
+                        console.log('✅ Agent answer created and set locally');
+                        
+                        // Send answer back to caller via WebSocket
+                        if (websocketClient) {
+                            websocketClient.sendWebRTCAnswer('anonymous', answer, callId);
+                            console.log('📤 Agent answer sent to caller via WebSocket');
+                        }
+                        
+                        // NOW clear incoming call data after using the offer
+                        console.log('🧹 Clearing incoming call data after using offer');
+                        delete window.incomingCallData;
+                        
+                    } else {
+                        console.error('❌ No WebRTC offer found - cannot establish connection');
+                        console.error('🔍 Debug: incomingCallData structure:', JSON.stringify(window.incomingCallData, null, 2));
+                        alert('Call setup failed: No offer received from caller');
+                        return;
+                    }
+                    
+                    // Update the current call section to show active call
+                    updateCurrentCallSection(callId, callerId, callType);
+                    
+                    // Set call state
+                    isInCall = true;
+                    currentCallData = {
+                        callId,
+                        callerName: callerId || 'Anonymous',
+                        callType,
+                        timestamp: new Date().toISOString()
+                    };
+                    
+                    // Change agent status to busy
+                    const statusToggle = document.getElementById('statusToggle');
+                    if (statusToggle.textContent === 'Available') {
+                        statusToggle.click();
+                    }
+                    
+                    console.log('✅ Call connected successfully with WebRTC');
+                    
+                } catch (error) {
+                    console.error('❌ Error starting incoming call:', error);
+                    alert('Could not access microphone/camera. Please check permissions.');
+                }
+            }
+            
+            function updateCurrentCallSection(callId, callerName, callType) {
+                const currentCallInfo = document.getElementById('currentCallInfo');
+                
+                currentCallInfo.innerHTML = `
+                    <div class="text-center">
+                        <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-phone text-green-600 text-2xl"></i>
+                        </div>
+                        <h4 class="font-semibold text-gray-900 mb-2">Active Call</h4>
+                        <p class="text-gray-600 mb-2">${callerName || 'Anonymous'}</p>
+                        <p class="text-sm text-gray-500 mb-4">${callType || 'voice'} call</p>
+                        <div class="text-lg font-semibold text-green-600 mb-4" id="callTimer">00:00</div>
+                        
+                        ${callType === 'video' ? `
+                        <!-- Local Video Preview -->
+                        <div id="localVideoContainer" class="mb-4 p-4 bg-blue-50 rounded-lg">
+                            <p class="text-sm text-gray-500 mb-2">Your Camera</p>
+                            <video id="localVideo" class="w-full h-32 object-cover rounded-lg border-2 border-blue-300" muted autoplay playsinline></video>
+                        </div>
+                        
+                        <!-- Video Display Area -->
+                        <div id="videoContainer" class="mb-4 p-4 bg-gray-50 rounded-lg">
+                            <p class="text-sm text-gray-500 mb-2">Remote Video</p>
+                            <div id="remoteVideoPlaceholder" class="text-center py-8 text-gray-400">
+                                <i class="fas fa-video text-2xl mb-2"></i>
+                                <p>Waiting for video...</p>
+                            </div>
+                        </div>
+                        ` : ''}
+                        
+                        <div class="flex justify-center space-x-3">
+                            <button id="muteBtn" class="bg-gray-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-700">
+                                <i class="fas fa-microphone mr-2"></i>Mute
+                            </button>
+                            ${callType === 'video' ? `
+                            <button id="videoBtn" class="bg-purple-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-purple-700">
+                                <i class="fas fa-video mr-2"></i>Video Off
+                            </button>
+                            <button id="screenShareBtn" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700">
+                                <i class="fas fa-desktop mr-2"></i>Share Screen
+                            </button>
+                            ` : ''}
+                            <button id="holdBtn" class="bg-yellow-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-yellow-700">
+                                <i class="fas fa-pause mr-2"></i>Hold
+                            </button>
+                            <button id="endCallBtn" class="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700">
+                                <i class="fas fa-phone-slash mr-2"></i>End Call
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                // Add event listeners to call control buttons
+                document.getElementById('muteBtn').addEventListener('click', toggleMute);
+                if (callType === 'video') {
+                    document.getElementById('videoBtn').addEventListener('click', toggleVideo);
+                    document.getElementById('screenShareBtn').addEventListener('click', toggleScreenShare);
+                }
+                document.getElementById('holdBtn').addEventListener('click', toggleHold);
+                document.getElementById('endCallBtn').addEventListener('click', endCall);
+                
+                // Start call timer
+                startCallTimer();
+            }
+            
+            function loadPageContent(pageName) {
+                switch(pageName) {
+                    case 'dashboard':
+                        initializeDashboard();
+                        break;
+                    case 'calls':
+                        loadCallsPage();
+                        break;
+                    case 'queue':
+                        loadQueuePage();
+                        break;
+                    case 'history':
+                        loadHistoryPage();
+                        break;
+                    case 'profile':
+                        loadProfilePage();
+                        break;
+                }
+            }
+
+            function initializeDashboard() {
+                // Initialize call volume chart
+                const ctx1 = document.getElementById('callVolumeChart').getContext('2d');
+                new Chart(ctx1, {
+                    type: 'line',
+                    data: {
+                        labels: ['9AM', '10AM', '11AM', '12PM', '1PM', '2PM', '3PM', '4PM'],
+                        datasets: [{
+                            label: 'Calls',
+                            data: [3, 5, 8, 6, 4, 7, 9, 6],
+                            borderColor: 'rgb(59, 130, 246)',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+
+                // Initialize call duration chart
+                const ctx2 = document.getElementById('callDurationChart').getContext('2d');
+                new Chart(ctx2, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['0-2 min', '2-5 min', '5-10 min', '10+ min'],
+                        datasets: [{
+                            data: [15, 45, 30, 10],
+                            backgroundColor: [
+                                'rgb(59, 130, 246)',
+                                'rgb(16, 185, 129)',
+                                'rgb(245, 158, 11)',
+                                'rgb(239, 68, 68)'
+                            ],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false
+                    }
+                });
+            }
+
+            // Status toggle functionality
+            const statusToggle = document.getElementById('statusToggle');
+            let isAvailable = true;
+
+            statusToggle.addEventListener('click', function() {
+                isAvailable = !isAvailable;
+                if (isAvailable) {
+                    this.textContent = 'Available';
+                    this.className = 'bg-green-600 text-white px-3 py-1 rounded-full text-sm font-medium hover:bg-green-700 transition-colors';
+                } else {
+                    this.textContent = 'Busy';
+                    this.className = 'bg-red-600 text-white px-3 py-1 rounded-full text-sm font-medium hover:bg-red-700 transition-colors';
+                }
+            });
+
+            // Placeholder functions for other pages
+            function loadCallsPage() {
+                const content = document.getElementById('calls-content');
+                content.innerHTML = '<div class="text-center py-12"><p class="text-gray-500">Active calls page coming soon...</p></div>';
+            }
+
+            function loadQueuePage() {
+                const content = document.getElementById('queue-content');
+                content.innerHTML = '<div class="text-center py-12"><p class="text-gray-500">Call queue page coming soon...</p></div>';
+            }
+
+            function loadHistoryPage() {
+                const content = document.getElementById('history-content');
+                content.innerHTML = '<div class="text-center py-12"><p class="text-gray-500">Call history page coming soon...</p></div>';
+            }
+
+            function loadProfilePage() {
+                const content = document.getElementById('profile-content');
+                content.innerHTML = '<div class="text-center py-12"><p class="text-gray-500">Profile page coming soon...</p></div>';
+            }
+
+            // Check for pending calls from landing page
+            function checkForPendingCalls() {
+                // Don't check if we're already in a call
+                if (isInCall) {
+                    return;
+                }
+                
+                const pendingCall = localStorage.getItem('pendingCall');
+                if (pendingCall) {
+                    try {
+                        const callData = JSON.parse(pendingCall);
+                        const now = Date.now();
+                        
+                        console.log('Agent dashboard found pending call:', callData.callId, 'timestamp:', callData.timestamp, 'age:', now - callData.timestamp, 'ms');
+                        
+                        // Check if call is recent (within 30 seconds)
+                        if (now - callData.timestamp < 30000) {
+                            console.log('Showing incoming call for:', callData.callId);
+                            showIncomingCall(callData);
+                        } else {
+                            // Remove old call data
+                            console.log('Removing old call data:', callData.callId);
+                            localStorage.removeItem('pendingCall');
+                        }
+                    } catch (error) {
+                        console.error('Error parsing pending call:', error);
+                        localStorage.removeItem('pendingCall');
+                    }
+                }
+            }
+
+            // Show incoming call with real customer data
+            function showIncomingCall(callData) {
+                const currentCallInfo = document.getElementById('currentCallInfo');
+                currentCallInfo.innerHTML = `
+                    <div class="text-center">
+                        <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-phone text-green-600 text-2xl"></i>
+                        </div>
+                        <h4 class="font-semibold text-gray-900 mb-2">Incoming Call</h4>
+                        <p class="text-gray-600 mb-2">${callData.callerName}</p>
+                        <p class="text-sm text-gray-500 mb-4">${callData.callReason}</p>
+                        <div class="flex justify-center space-x-3">
+                            <button id="answerCallBtn" class="bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-700">
+                                <i class="fas fa-phone mr-2"></i>Answer
+                            </button>
+                            <button id="declineCallBtn" class="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700">
+                                <i class="fas fa-phone-slash mr-2"></i>Decline
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                // Store call data for WebRTC connection
+                currentCallData = callData;
+
+                // Add event listeners to the new buttons
+                const answerBtn = document.getElementById('answerCallBtn');
+                const declineBtn = document.getElementById('declineCallBtn');
+                
+                // Prevent multiple clicks
+                answerBtn.addEventListener('click', () => {
+                    if (!isInCall) {
+                        answerBtn.disabled = true;
+                        answerBtn.textContent = 'Connecting...';
+                        // Use the new function for answering calls
+                        startIncomingCall(callData.callId, callData.callerName, callData.callType || 'voice');
+                    }
+                });
+                
+                declineBtn.addEventListener('click', declineCall);
+            }
+
+            // Simulate incoming call with real WebRTC (fallback)
+            function simulateIncomingCall() {
+                // Only show simulated call if no real call is pending
+                if (!localStorage.getItem('pendingCall')) {
+                    const currentCallInfo = document.getElementById('currentCallInfo');
+                    currentCallInfo.innerHTML = `
+                        <div class="text-center">
+                            <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="fas fa-phone text-green-600 text-2xl"></i>
+                            </div>
+                            <h4 class="font-semibold text-gray-900 mb-2">Incoming Call</h4>
+                            <p class="text-gray-600 mb-2">Sarah Johnson</p>
+                            <p class="text-sm text-gray-500 mb-4">Technical Support</p>
+                            <div class="flex justify-center space-x-3">
+                                <button id="answerCallBtn" class="bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-700">
+                                    <i class="fas fa-phone mr-2"></i>Answer
+                                </button>
+                                <button id="declineCallBtn" class="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700">
+                                    <i class="fas fa-phone-slash mr-2"></i>Decline
+                                </button>
+                            </div>
+                        </div>
+                    `;
+
+                    // Add event listeners to the new buttons
+                    document.getElementById('answerCallBtn').addEventListener('click', answerCall);
+                    document.getElementById('declineCallBtn').addEventListener('click', declineCall);
+                }
+            }
+
+                         function answerCall() {
+                 const currentCallInfo = document.getElementById('currentCallInfo');
+                 currentCallInfo.innerHTML = `
+                     <div class="text-center">
+                         <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                             <i class="fas fa-phone text-green-600 text-2xl"></i>
+                         </div>
+                         <h4 class="font-semibold text-gray-900 mb-2">Active Call</h4>
+                         <p class="text-gray-600 mb-2">Sarah Johnson</p>
+                         <p class="text-sm text-gray-500 mb-4">Technical Support</p>
+                         <div class="text-lg font-semibold text-green-600 mb-4" id="callTimer">00:00</div>
+                         
+                         <!-- Local Video Preview -->
+                         <div id="localVideoContainer" class="mb-4 p-4 bg-blue-50 rounded-lg">
+                             <p class="text-sm text-gray-500 mb-2">Your Camera</p>
+                             <video id="localVideo" class="w-full h-32 object-cover rounded-lg border-2 border-blue-300" muted autoplay playsinline></video>
+                         </div>
+                         
+                         <!-- Video Display Area -->
+                         <div id="videoContainer" class="mb-4 p-4 bg-gray-50 rounded-lg">
+                             <p class="text-sm text-gray-500 mb-2">Remote Video</p>
+                             <div id="remoteVideoPlaceholder" class="text-center py-8 text-gray-400">
+                                 <i class="fas fa-video text-2xl mb-2"></i>
+                                 <p>Waiting for video...</p>
+                             </div>
+                             <div id="videoControls" class="hidden text-center mt-2">
+                                 <button id="enableVideoBtn" class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700">
+                                     <i class="fas fa-play mr-2"></i>Enable Video
+                                 </button>
+                             </div>
+                         </div>
+                         
+                         <div class="flex justify-center space-x-3">
+                             <button id="muteBtn" class="bg-gray-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-700">
+                                 <i class="fas fa-microphone mr-2"></i>Mute
+                             </button>
+                             <button id="videoBtn" class="bg-purple-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-purple-700">
+                                 <i class="fas fa-video mr-2"></i>Video Off
+                             </button>
+                             <button id="screenShareBtn" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700">
+                                 <i class="fas fa-desktop mr-2"></i>Share Screen
+                             </button>
+                             <button id="holdBtn" class="bg-yellow-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-yellow-700">
+                                 <i class="fas fa-pause mr-2"></i>Hold
+                             </button>
+                             <button id="endCallBtn" class="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700">
+                                 <i class="fas fa-phone-slash mr-2"></i>End Call
+                             </button>
+                         </div>
+                     </div>
+                 `;
+
+                // Add event listeners to call control buttons
+                document.getElementById('muteBtn').addEventListener('click', toggleMute);
+                document.getElementById('videoBtn').addEventListener('click', toggleVideo);
+                document.getElementById('screenShareBtn').addEventListener('click', toggleScreenShare);
+                document.getElementById('holdBtn').addEventListener('click', toggleHold);
+                document.getElementById('endCallBtn').addEventListener('click', endCall);
+
+                // Start call timer
+                startCallTimer();
+                
+                // Change agent status to busy
+                document.getElementById('statusToggle').click();
+            }
+
+            function declineCall() {
+                const currentCallInfo = document.getElementById('currentCallInfo');
+                currentCallInfo.innerHTML = `
+                    <div class="text-center">
+                        <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-phone-slash text-gray-400 text-2xl"></i>
+                        </div>
+                        <p class="text-gray-500">Call Declined</p>
+                        <p class="text-sm text-gray-400">Returning to available status</p>
+                    </div>
+                `;
+
+                // Reset to available status after 3 seconds
+                setTimeout(() => {
+                    currentCallInfo.innerHTML = `
+                        <div class="text-center py-8">
+                            <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="fas fa-phone text-gray-400 text-2xl"></i>
+                            </div>
+                            <p class="text-gray-500">No active call</p>
+                            <p class="text-sm text-gray-400">You'll see call details here when connected</p>
+                        </div>
+                    `;
+                }, 3000);
+            }
+
+            function toggleMute() {
+                const muteBtn = document.getElementById('muteBtn');
+                const isMuted = muteBtn.textContent.includes('Unmute');
+                
+                if (isMuted) {
+                    muteBtn.innerHTML = '<i class="fas fa-microphone mr-2"></i>Mute';
+                    muteBtn.className = 'bg-gray-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-700';
+                    // Unmute local audio
+                    if (localStream) {
+                        localStream.getAudioTracks().forEach(track => track.enabled = true);
+                    }
+                } else {
+                    muteBtn.innerHTML = '<i class="fas fa-microphone-slash mr-2"></i>Unmute';
+                    muteBtn.className = 'bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700';
+                    // Mute local audio
+                    if (localStream) {
+                        localStream.getAudioTracks().forEach(track => track.enabled = false);
+                    }
+                }
+            }
+
+            function toggleVideo() {
+                const videoBtn = document.getElementById('videoBtn');
+                const isVideoOff = videoBtn.textContent.includes('Video On');
+                
+                if (isVideoOff) {
+                    videoBtn.innerHTML = '<i class="fas fa-video mr-2"></i>Video Off';
+                    videoBtn.className = 'bg-purple-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-purple-700';
+                    // Enable local video
+                    if (localStream) {
+                        localStream.getVideoTracks().forEach(track => track.enabled = true);
+                    }
+                } else {
+                    videoBtn.innerHTML = '<i class="fas fa-video-slash mr-2"></i>Video On';
+                    videoBtn.className = 'bg-gray-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-700';
+                    // Disable local video
+                    if (localStream) {
+                        localStream.getVideoTracks().forEach(track => track.enabled = false);
+                    }
+                }
+            }
+
+            async function toggleScreenShare() {
+                const screenShareBtn = document.getElementById('screenShareBtn');
+                
+                if (!isScreenSharing) {
+                    try {
+                        // Start screen sharing
+                        screenStream = await navigator.mediaDevices.getDisplayMedia({
+                            video: {
+                                cursor: 'always',
+                                displaySurface: 'monitor'
+                            },
+                            audio: false
+                        });
+                        
+                        isScreenSharing = true;
+                        screenShareBtn.innerHTML = '<i class="fas fa-stop mr-2"></i>Stop Sharing';
+                        screenShareBtn.className = 'bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700';
+                        
+                        // Replace video track with screen track or add new video track
+                        if (peerConnection) {
+                            const videoTrack = screenStream.getVideoTracks()[0];
+                            let sender = peerConnection.getSenders().find(s => 
+                                s.track && s.track.kind === 'video'
+                            );
+                            
+                            if (sender) {
+                                // Replace existing video track
+                                sender.replaceTrack(videoTrack);
+                                console.log('Screen sharing track replaced successfully');
+                            } else {
+                                // Add new video track for voice calls
+                                sender = peerConnection.addTrack(videoTrack, screenStream);
+                                console.log('Screen sharing track added as new video track');
+                            }
+                        }
+                        
+                        // Handle screen share stop
+                        screenStream.getVideoTracks()[0].onended = () => {
+                            stopScreenShare();
+                        };
+                        
+                        console.log('Screen sharing started successfully');
+                        
+                    } catch (error) {
+                        console.error('Error starting screen share:', error);
+                        alert('Could not start screen sharing. Please check permissions.');
+                    }
+                } else {
+                    stopScreenShare();
+                }
+            }
+
+            function stopScreenShare() {
+                if (screenStream) {
+                    screenStream.getTracks().forEach(track => track.stop());
+                    screenStream = null;
+                }
+                
+                isScreenSharing = false;
+                const screenShareBtn = document.getElementById('screenShareBtn');
+                screenShareBtn.innerHTML = '<i class="fas fa-desktop mr-2"></i>Share Screen';
+                screenShareBtn.className = 'bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700';
+                
+                // Restore original video track or remove added track
+                if (peerConnection) {
+                    const sender = peerConnection.getSenders().find(s => 
+                        s.track && s.track.kind === 'video'
+                    );
+                    
+                    if (sender) {
+                        if (localStream && localStream.getVideoTracks().length > 0) {
+                            // Restore original video track if it exists
+                            const videoTrack = localStream.getVideoTracks()[0];
+                            sender.replaceTrack(videoTrack);
+                            console.log('Original video track restored');
+                        } else {
+                            // Remove the added video track for voice calls
+                            peerConnection.removeTrack(sender);
+                            console.log('Added video track removed for voice call');
+                        }
+                    }
+                }
+                
+                console.log('Screen sharing stopped');
+            }
+
+            function toggleHold() {
+                const holdBtn = document.getElementById('holdBtn');
+                const isOnHold = holdBtn.textContent.includes('Resume');
+                
+                if (isOnHold) {
+                    holdBtn.innerHTML = '<i class="fas fa-pause mr-2"></i>Hold';
+                    holdBtn.className = 'bg-yellow-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-yellow-700';
+                } else {
+                    holdBtn.innerHTML = '<i class="fas fa-play mr-2"></i>Resume';
+                    holdBtn.className = 'bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-700';
+                }
+            }
+
+            function endCall() {
+                console.log('Ending call and cleaning up WebRTC resources');
+                
+                // Clean up WebRTC resources
+                if (peerConnection) {
+                    peerConnection.close();
+                    peerConnection = null;
+                }
+                if (localStream) {
+                    localStream.getTracks().forEach(track => track.stop());
+                    localStream = null;
+                }
+                if (remoteStream) {
+                    remoteStream.getTracks().forEach(track => track.stop());
+                    remoteStream = null;
+                }
+
+                // Remove remote audio
+                const remoteAudio = document.getElementById('remoteAudio');
+                if (remoteAudio) {
+                    remoteAudio.remove();
+                }
+
+                // Remove remote video
+                const remoteVideo = document.getElementById('remoteVideo');
+                if (remoteVideo) {
+                    remoteVideo.remove();
+                }
+
+                // Stop screen sharing if active
+                if (isScreenSharing) {
+                    stopScreenShare();
+                }
+
+                // Reset call state
+                isInCall = false;
+                currentCallData = null;
+
+                // Stop call timer
+                stopCallTimer();
+                
+                // Reset agent status to available
+                const statusToggle = document.getElementById('statusToggle');
+                if (statusToggle.textContent === 'Busy') {
+                    statusToggle.click();
+                }
+
+                // Reset current call section
+                const currentCallInfo = document.getElementById('currentCallInfo');
+                currentCallInfo.innerHTML = `
+                    <div class="text-center">
+                        <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-phone-slash text-gray-400 text-2xl"></i>
+                        </div>
+                        <p class="text-gray-500">Call Ended</p>
+                        <p class="text-sm text-gray-400">Returning to available status</p>
+                    </div>
+                `;
+                
+                // Reset to available status after 3 seconds
+                setTimeout(() => {
+                    currentCallInfo.innerHTML = `
+                        <div class="text-center py-8">
+                            <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="fas fa-phone text-gray-400 text-2xl"></i>
+                            </div>
+                            <p class="text-gray-500">No active call</p>
+                            <p class="text-sm text-gray-400">You'll see call details here when connected</p>
+                        </div>
+                    `;
+                }, 3000);
+                
+                console.log('✅ Call ended and UI reset');
+            }
+
+            let callTimerInterval;
+            let callStartTime;
+
+            function startCallTimer() {
+                callStartTime = Date.now();
+                callTimerInterval = setInterval(updateCallTimer, 1000);
+            }
+
+            function stopCallTimer() {
+                if (callTimerInterval) {
+                    clearInterval(callTimerInterval);
+                }
+            }
+
+            function updateCallTimer() {
+                const elapsed = Date.now() - callStartTime;
+                const minutes = Math.floor(elapsed / 60000);
+                const seconds = Math.floor((elapsed % 60000) / 1000);
+                const timerElement = document.getElementById('callTimer');
+                if (timerElement) {
+                    timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                }
+            }
+
+            // Clear any old call data on page load
+            function clearOldCallData() {
+                const pendingCall = localStorage.getItem('pendingCall');
+                const callAnswer = localStorage.getItem('callAnswer');
+                
+                if (pendingCall) {
+                    try {
+                        const callData = JSON.parse(pendingCall);
+                        const now = Date.now();
+                        if (now - callData.timestamp > 30000) {
+                            console.log('Clearing old pending call on page load:', callData.callId);
+                            localStorage.removeItem('pendingCall');
+                        }
+                    } catch (error) {
+                        console.error('Error parsing pending call on page load:', error);
+                        localStorage.removeItem('pendingCall');
+                    }
+                }
+                
+                if (callAnswer) {
+                    try {
+                        const answerData = JSON.parse(callAnswer);
+                        const now = Date.now();
+                        if (now - answerData.timestamp > 30000) {
+                            console.log('Clearing old call answer on page load:', answerData.callId);
+                            localStorage.removeItem('callAnswer');
+                        }
+                    } catch (error) {
+                        console.error('Error parsing call answer on page load:', error);
+                        localStorage.removeItem('callAnswer');
+                    }
+                }
+            }
+
+            // Clear old data and check for pending calls immediately
+            clearOldCallData();
+            checkForPendingCalls();
+            
+            // Also check for any existing calls in localStorage
+            const existingCall = localStorage.getItem('pendingCall');
+            if (existingCall) {
+                console.log('Found existing call on page load:', existingCall);
+                try {
+                    const callData = JSON.parse(existingCall);
+                    const now = Date.now();
+                    if (now - callData.timestamp < 30000) {
+                        console.log('Processing existing call on page load:', callData.callId);
+                        showIncomingCall(callData);
+                    } else {
+                        console.log('Removing old existing call on page load:', callData.callId);
+                        localStorage.removeItem('pendingCall');
+                    }
+                } catch (error) {
+                    console.error('Error parsing existing call:', error);
+                    localStorage.removeItem('pendingCall');
+                }
+            }
+            
+            // Simulate incoming call after 5 seconds for demo (only if no real call)
+            setTimeout(simulateIncomingCall, 5000);
+            
+            // Check for new calls every 3 seconds (reduced frequency)
+            setInterval(checkForPendingCalls, 3000);
+
+            // Add WebRTC test button to header
+            const header = document.querySelector('header');
+            const testButton = document.createElement('button');
+            testButton.innerHTML = '<i class="fas fa-microphone mr-2"></i>Test WebRTC';
+            testButton.className = 'bg-blue-600 text-white px-3 py-1 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors';
+            testButton.addEventListener('click', testWebRTC);
+            header.querySelector('.flex').appendChild(testButton);
+
+            // Add refresh calls button to header
+            const refreshButton = document.createElement('button');
+            refreshButton.innerHTML = '<i class="fas fa-sync-alt mr-2"></i>Refresh Calls';
+            refreshButton.className = 'bg-green-600 text-white px-3 py-1 rounded-md text-sm font-medium hover:bg-green-700 transition-colors ml-2';
+            refreshButton.addEventListener('click', () => {
+                console.log('Manual refresh of calls triggered');
+                clearOldCallData();
+                checkForPendingCalls();
+            });
+            header.querySelector('.flex').appendChild(refreshButton);
+
+            // WebRTC test function
+            async function testWebRTC() {
+                try {
+                    // Get microphone access
+                    const stream = await navigator.mediaDevices.getUserMedia({ 
+                        audio: true, 
+                        video: false 
+                    });
+
+                    // Create audio element to hear yourself
+                    const audioElement = document.createElement('audio');
+                    audioElement.srcObject = stream;
+                    audioElement.autoplay = true;
+                    audioElement.muted = true; // Prevent feedback
+
+                    // Show success message
+                    alert('WebRTC test successful! Microphone access granted. You can now hear yourself (muted to prevent feedback).');
+
+                    // Clean up after 10 seconds
+                    setTimeout(() => {
+                        stream.getTracks().forEach(track => track.stop());
+                        audioElement.remove();
+                    }, 10000);
+
+                } catch (error) {
+                    console.error('WebRTC test failed:', error);
+                    alert('WebRTC test failed: ' + error.message);
+                }
+            }
+
+            // Enhanced WebRTC answer call function
+            async function answerCallWithWebRTC(callData) {
+                try {
+                    // Prevent multiple calls
+                    if (isInCall) {
+                        console.log('Already in a call, ignoring duplicate answer');
+                        return;
+                    }
+
+                    console.log('Answering call with WebRTC data:', callData);
+                    
+                    // Check if this is a video call based on call data
+                    const isVideoCall = callData.callType === 'video';
+                    console.log('Call type from data:', callData.callType, 'isVideoCall:', isVideoCall);
+                    
+                    // Get microphone and camera access
+                    localStream = await navigator.mediaDevices.getUserMedia({ 
+                        audio: true, 
+                        video: isVideoCall ? {
+                            width: { ideal: 1280 },
+                            height: { ideal: 720 },
+                            facingMode: 'user'
+                        } : false
+                    });
+                    console.log('Camera and microphone access granted, local stream:', localStream);
+
+                                                                                  // Local video will be set up in updateUIForActiveCall after the UI is created
+                    
+                                         // Create WebRTC peer connection
+                    peerConnection = new RTCPeerConnection({
+                        iceServers: [
+                            { urls: 'stun:stun.l.google.com:19302' }
+                        ]
+                    });
+                    console.log('WebRTC peer connection created');
+
+                    // Add local stream tracks
+                    localStream.getTracks().forEach(track => {
+                        peerConnection.addTrack(track, localStream);
+                        console.log('Added local track:', track);
+                    });
+
+                                         // Handle incoming tracks (remote audio + video from customer)
+                     peerConnection.ontrack = (event) => {
+                         console.log('Received remote stream from customer:', event.streams[0]);
+                         remoteStream = event.streams[0];
+                         
+                         // Handle remote audio
+                         const remoteAudio = document.createElement('audio');
+                         remoteAudio.id = 'remoteAudio';
+                         remoteAudio.srcObject = remoteStream;
+                         remoteAudio.autoplay = true;
+                         remoteAudio.volume = 1.0;
+                         remoteAudio.muted = false; // Ensure not muted
+                         remoteAudio.controls = false; // Hide controls
+                         
+                         // Force play to overcome autoplay restrictions
+                         remoteAudio.play().catch(e => {
+                             console.log('Autoplay blocked, user must interact first');
+                         });
+                         
+                         document.body.appendChild(remoteAudio);
+                         console.log('Remote audio element created and playing');
+                         
+                         // Handle remote video - wait for containers to be ready (only for video calls)
+                         const setupRemoteVideo = () => {
+                             // Check if this is a video call
+                             const isVideoCall = currentCallData && currentCallData.callType === 'video';
+                             if (!isVideoCall) {
+                                 console.log('Not a video call, skipping remote video setup');
+                                 return;
+                             }
+                             
+                             const videoContainer = document.getElementById('videoContainer');
+                             const videoPlaceholder = document.getElementById('remoteVideoPlaceholder');
+                             
+                             if (videoContainer && videoPlaceholder) {
+                                 console.log('Video containers found, setting up remote video');
+                                 
+                                 // Create remote video element
+                                 const remoteVideo = document.createElement('video');
+                                 remoteVideo.id = 'remoteVideo';
+                                 remoteVideo.srcObject = remoteStream;
+                                 remoteVideo.autoplay = true;
+                                 remoteVideo.muted = false;
+                                 remoteVideo.controls = false;
+                                 remoteVideo.playsInline = true;
+                                 remoteVideo.className = 'w-full h-48 object-cover rounded-lg mb-4';
+                                 
+                                 // Remove any existing remote video first
+                                 const existingVideo = document.getElementById('remoteVideo');
+                                 if (existingVideo) {
+                                     existingVideo.remove();
+                                 }
+                                 
+                                 // Hide placeholder and show video
+                                 videoPlaceholder.style.display = 'none';
+                                 videoContainer.appendChild(remoteVideo);
+                                 
+                                 // Force play video with better error handling
+                                 remoteVideo.play().then(() => {
+                                     console.log('Remote video playing successfully');
+                                 }).catch(e => {
+                                     console.log('Video autoplay blocked, will retry:', e);
+                                     // Retry after a short delay
+                                     setTimeout(() => {
+                                         remoteVideo.play().then(() => {
+                                             console.log('Remote video playing successfully on retry');
+                                         }).catch(e2 => {
+                                             console.log('Video autoplay blocked on retry, showing enable button:', e2);
+                                             // Show enable video button
+                                             const videoControls = document.getElementById('videoControls');
+                                             if (videoControls) {
+                                                 videoControls.classList.remove('hidden');
+                                             }
+                                         });
+                                     }, 1000);
+                                 });
+                                 
+                                 // Ensure video stays in DOM by preventing removal
+                                 remoteVideo.addEventListener('remove', (e) => {
+                                     console.log('Video element being removed, preventing removal');
+                                     e.preventDefault();
+                                 });
+                                 
+                                 // Add additional protection against accidental removal
+                                 remoteVideo.setAttribute('data-protected', 'true');
+                                 remoteVideo.addEventListener('DOMNodeRemoved', (e) => {
+                                     console.log('Video element being removed from DOM, preventing removal');
+                                     e.preventDefault();
+                                     e.stopPropagation();
+                                 });
+                                 
+                                 console.log('Remote video element created and added to UI');
+                             } else {
+                                 console.log('Video containers not ready yet, retrying in 100ms...');
+                                 // Increase retry interval and add max retries to prevent infinite loops
+                                 if (!window.videoSetupRetries) window.videoSetupRetries = 0;
+                                 if (window.videoSetupRetries < 50) { // Max 5 seconds of retries
+                                     window.videoSetupRetries++;
+                                     setTimeout(setupRemoteVideo, 100);
+                                 } else {
+                                     console.error('Video containers not ready after 5 seconds, giving up');
+                                     window.videoSetupRetries = 0;
+                                 }
+                             }
+                         };
+                         
+                         // Start setting up remote video with better timing
+                         // Wait a bit longer to ensure UI is fully updated
+                         setTimeout(() => {
+                             setupRemoteVideo();
+                         }, 200);
+                     };
+
+                    // Handle ICE candidates
+                    peerConnection.onicecandidate = (event) => {
+                        if (event.candidate) {
+                            console.log('ICE candidate generated:', event.candidate);
+                        }
+                    };
+
+                    // Handle connection state changes
+                    peerConnection.onconnectionstatechange = (event) => {
+                        console.log('Connection state changed:', peerConnection.connectionState);
+                        if (peerConnection.connectionState === 'connected') {
+                            console.log('WebRTC connection established successfully!');
+                        }
+                    };
+
+                    // Process customer offer
+                    if (callData && callData.offer) {
+                        try {
+                            console.log('Processing customer offer:', callData.offer);
+                            
+                            // Set the remote description (customer's offer)
+                            await peerConnection.setRemoteDescription(new RTCSessionDescription(callData.offer));
+                            console.log('Remote description set successfully');
+                            
+                            // Create answer
+                            const answer = await peerConnection.createAnswer();
+                            await peerConnection.setLocalDescription(answer);
+                            console.log('Local description (answer) set successfully');
+                            
+                            // Store the answer in localStorage for the customer to pick up
+                            const answerData = {
+                                type: 'answer',
+                                answer: answer,
+                                callId: callData.callId,
+                                timestamp: Date.now()
+                            };
+                            localStorage.setItem('callAnswer', JSON.stringify(answerData));
+                            console.log('Agent stored answer in localStorage with callId:', callData.callId);
+                            
+                            console.log('WebRTC connection established with customer offer');
+                            
+                            // Clear the pending call
+                            localStorage.removeItem('pendingCall');
+                            
+                        } catch (error) {
+                            console.error('Error establishing WebRTC connection:', error);
+                        }
+                    }
+
+                                         // Set call state
+                     isInCall = true;
+                     currentCallData = callData;
+
+                     // Update UI to show active call FIRST (this creates the video containers)
+                     updateUIForActiveCall(callData);
+
+                     // Now that UI is updated, ensure video containers are properly set up
+                     const videoContainer = document.getElementById('videoContainer');
+                     const videoPlaceholder = document.getElementById('remoteVideoPlaceholder');
+                     console.log('Video containers check after UI update:', { videoContainer, videoPlaceholder });
+                     
+                     if (!videoContainer || !videoPlaceholder) {
+                         console.error('Video containers still not found after UI update!');
+                     } else {
+                         console.log('Video containers found successfully after UI update');
+                     }
+
+                     // Change agent status to busy
+                     document.getElementById('statusToggle').click();
+
+                     console.log('Call answered successfully, WebRTC connection established');
+
+                } catch (error) {
+                    console.error('Error answering call with WebRTC:', error);
+                    alert('Could not access microphone. Please check permissions.');
+                }
+            }
+
+                                        // Helper function to setup remote video
+            function setupRemoteVideo(remoteStream) {
+                const videoContainer = document.getElementById('videoContainer');
+                const videoPlaceholder = document.getElementById('remoteVideoPlaceholder');
+                
+                if (videoContainer && videoPlaceholder) {
+                    console.log('🎥 Setting up remote video display');
+                    
+                    // Create remote video element
+                    const remoteVideo = document.createElement('video');
+                    remoteVideo.id = 'remoteVideo';
+                    remoteVideo.srcObject = remoteStream;
+                    remoteVideo.autoplay = true;
+                    remoteVideo.muted = false;
+                    remoteVideo.controls = false;
+                    remoteVideo.playsInline = true;
+                    remoteVideo.className = 'w-full h-48 object-cover rounded-lg mb-4';
+                    
+                    // Remove any existing remote video first
+                    const existingVideo = document.getElementById('remoteVideo');
+                    if (existingVideo) {
+                        existingVideo.remove();
+                    }
+                    
+                    // Hide placeholder and show video
+                    videoPlaceholder.style.display = 'none';
+                    videoContainer.appendChild(remoteVideo);
+                    
+                    // Force play video
+                    remoteVideo.play().then(() => {
+                        console.log('✅ Remote video playing successfully');
+                    }).catch(e => {
+                        console.log('⚠️ Video autoplay blocked:', e);
+                    });
+                    
+                    console.log('✅ Remote video element created and added to UI');
+                } else {
+                    console.log('⚠️ Video containers not ready yet');
+                }
+            }
+            
+            // Update UI for active call
+            function updateUIForActiveCall(callData) {
+                    const currentCallInfo = document.getElementById('currentCallInfo');
+                    const callerName = callData ? callData.callerName : 'Customer';
+                    const callReason = callData ? callData.callReason : 'Call';
+                    const isVideoCall = callData ? callData.callType === 'video' : false;
+                    
+                    console.log('Updating UI for call type:', callData?.callType, 'isVideoCall:', isVideoCall);
+                    
+                    // Store any existing remote video before updating UI
+                    const existingRemoteVideo = document.getElementById('remoteVideo');
+                    
+                    currentCallInfo.innerHTML = `
+                        <div class="text-center">
+                            <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="fas fa-phone text-green-600 text-2xl"></i>
+                            </div>
+                            <h4 class="font-semibold text-gray-900 mb-2">Active Call</h4>
+                            <p class="text-gray-600 mb-2">${callerName}</p>
+                            <p class="text-sm text-gray-500 mb-4">${callReason}</p>
+                            <div class="text-lg font-semibold text-green-600 mb-4" id="callTimer">00:00</div>
+                            
+                            ${isVideoCall ? `
+                            <!-- Local Video Preview -->
+                            <div id="localVideoContainer" class="mb-4 p-4 bg-blue-50 rounded-lg">
+                                <p class="text-sm text-gray-500 mb-2">Your Camera</p>
+                                <video id="localVideo" class="w-full h-32 object-cover rounded-lg border-2 border-blue-300" muted autoplay playsinline></video>
+                            </div>
+                            
+                            <!-- Video Display Area -->
+                            <div id="videoContainer" class="mb-4 p-4 bg-gray-50 rounded-lg">
+                                <p class="text-sm text-gray-500 mb-2">Remote Video</p>
+                                <div id="remoteVideoPlaceholder" class="text-center py-8 text-gray-400">
+                                    <i class="fas fa-video text-2xl mb-2"></i>
+                                    <p>Waiting for video...</p>
+                                </div>
+                                <div id="videoControls" class="hidden text-center mt-2">
+                                    <button id="enableVideoBtn" class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700">
+                                        <i class="fas fa-play mr-2"></i>Enable Video
+                                    </button>
+                                </div>
+                            </div>
+                            ` : ''}
+                        
+                        <div class="flex justify-center space-x-3">
+                            <button id="muteBtn" class="bg-gray-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-700">
+                                <i class="fas fa-microphone mr-2"></i>Mute
+                            </button>
+                            ${isVideoCall ? `
+                            <button id="videoBtn" class="bg-purple-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-purple-700">
+                                <i class="fas fa-video mr-2"></i>Video Off
+                            </button>
+                            ` : ''}
+                            <button id="screenShareBtn" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700">
+                                <i class="fas fa-desktop mr-2"></i>Share Screen
+                            </button>
+                            <button id="holdBtn" class="bg-yellow-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-700">
+                                <i class="fas fa-pause mr-2"></i>Hold
+                            </button>
+                            <button id="endCallBtn" class="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700">
+                                <i class="fas fa-phone-slash mr-2"></i>End Call
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                // Add event listeners to call control buttons
+                document.getElementById('muteBtn').addEventListener('click', toggleMute);
+                if (isVideoCall) {
+                    document.getElementById('videoBtn').addEventListener('click', toggleVideo);
+                    document.getElementById('screenShareBtn').addEventListener('click', toggleScreenShare);
+                }
+                document.getElementById('holdBtn').addEventListener('click', toggleHold);
+                document.getElementById('endCallBtn').addEventListener('click', endCall);
+
+                // Add event listener for enable video button
+                const enableVideoBtn = document.getElementById('enableVideoBtn');
+                if (enableVideoBtn) {
+                    enableVideoBtn.addEventListener('click', () => {
+                        const remoteVideo = document.getElementById('remoteVideo');
+                        if (remoteVideo) {
+                            remoteVideo.play().then(() => {
+                                console.log('Video enabled successfully');
+                                const videoControls = document.getElementById('videoControls');
+                                if (videoControls) videoControls.classList.add('hidden');
+                            }).catch(e => {
+                                console.error('Failed to enable video:', e);
+                            });
+                        }
+                    });
+                }
+
+                                 // Restore remote video if it existed
+                 if (existingRemoteVideo) {
+                     const videoContainer = document.getElementById('videoContainer');
+                     const videoPlaceholder = document.getElementById('remoteVideoPlaceholder');
+                     
+                     if (videoContainer && videoPlaceholder) {
+                         videoPlaceholder.style.display = 'none';
+                         videoContainer.appendChild(existingRemoteVideo);
+                     }
+                 }
+
+                 // Set up local video if we have a local stream and it's a video call
+                 if (localStream && isVideoCall) {
+                     const localVideo = document.getElementById('localVideo');
+                     if (localVideo) {
+                         localVideo.srcObject = localStream;
+                         localVideo.play().then(() => {
+                             console.log('Local video playing successfully in UI update');
+                         }).catch(e => {
+                             console.log('Local video autoplay blocked in UI update:', e);
+                         });
+                     }
+                 }
+
+                 // Start call timer
+                 startCallTimer();
+            }
+        });
+    </script>
+</body>
+</html>

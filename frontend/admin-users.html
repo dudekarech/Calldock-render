@@ -1,0 +1,328 @@
+<!-- Users Management Page Content -->
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex justify-between items-center">
+        <div>
+            <h3 class="text-lg font-medium text-gray-900">User Management</h3>
+            <p class="text-sm text-gray-600">Manage users, roles, and permissions across all companies</p>
+        </div>
+        <button id="addUserBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center">
+            <i class="fas fa-plus mr-2"></i>
+            Add User
+        </button>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Search Users</label>
+                <input type="text" id="userSearch" placeholder="Search by name, email..." class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Role</label>
+                <select id="roleFilter" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">All Roles</option>
+                    <option value="super_admin">Super Admin</option>
+                    <option value="company_admin">Company Admin</option>
+                    <option value="agent">Agent</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Company</label>
+                <select id="companyFilter" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">All Companies</option>
+                    <option value="company1">Demo Company 1</option>
+                    <option value="company2">Demo Company 2</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                <select id="statusFilter" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">All Status</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                    <option value="pending">Pending</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Users Table -->
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <div class="flex justify-between items-center">
+                <h3 class="text-lg font-medium text-gray-900">Users</h3>
+                <div class="text-sm text-gray-600">
+                    Showing <span id="showingCount">1-10</span> of <span id="totalCount">25</span> users
+                </div>
+            </div>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Login</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="usersTableBody" class="bg-white divide-y divide-gray-200">
+                    <!-- Sample user rows -->
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <img class="h-10 w-10 rounded-full" src="https://ui-avatars.com/api/?name=John+Doe&background=667eea&color=fff" alt="">
+                                <div class="ml-4">
+                                    <div class="text-sm font-medium text-gray-900">John Doe</div>
+                                    <div class="text-sm text-gray-500">john.doe@example.com</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">Super Admin</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Demo Company 1</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Active</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2 hours ago</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <button class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
+                            <button class="text-red-600 hover:text-red-900">Delete</button>
+                        </td>
+                    </tr>
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <img class="h-10 w-10 rounded-full" src="https://ui-avatars.com/api/?name=Jane+Smith&background=10b981&color=fff" alt="">
+                                <div class="ml-4">
+                                    <div class="text-sm font-medium text-gray-900">Jane Smith</div>
+                                    <div class="text-sm text-gray-500">jane.smith@example.com</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Company Admin</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Demo Company 2</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Active</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">1 day ago</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <button class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
+                            <button class="text-red-600 hover:text-red-900">Delete</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+            <div class="flex-1 flex justify-between sm:hidden">
+                <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Previous</button>
+                <button class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Next</button>
+            </div>
+            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                    <p class="text-sm text-gray-700">
+                        Showing <span class="font-medium">1</span> to <span class="font-medium">10</span> of <span class="font-medium">25</span> results
+                    </p>
+                </div>
+                <div>
+                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                        <button class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">Previous</button>
+                        <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">1</button>
+                        <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">2</button>
+                        <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">3</button>
+                        <button class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">Next</button>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit User Modal -->
+<div id="userModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-medium text-gray-900" id="modalTitle">Add New User</h3>
+                <button id="closeModal" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form id="userForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                    <input type="text" id="userName" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                    <input type="email" id="userEmail" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Role</label>
+                    <select id="userRole" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">Select Role</option>
+                        <option value="super_admin">Super Admin</option>
+                        <option value="company_admin">Company Admin</option>
+                        <option value="agent">Agent</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Company</label>
+                    <select id="userCompany" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">Select Company</option>
+                        <option value="company1">Demo Company 1</option>
+                        <option value="company2">Demo Company 2</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                    <input type="password" id="userPassword" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button type="button" id="cancelBtn" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700">Save User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Users page functionality
+function loadUsersPage() {
+    const content = document.getElementById('users-content');
+    content.innerHTML = document.getElementById('users-page-template').innerHTML;
+    
+    // Initialize users page functionality
+    initializeUsersPage();
+}
+
+function initializeUsersPage() {
+    // Modal functionality
+    const modal = document.getElementById('userModal');
+    const addUserBtn = document.getElementById('addUserBtn');
+    const closeModal = document.getElementById('closeModal');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const userForm = document.getElementById('userForm');
+    
+    // Show modal
+    addUserBtn.addEventListener('click', () => {
+        modal.classList.remove('hidden');
+        document.getElementById('modalTitle').textContent = 'Add New User';
+        userForm.reset();
+    });
+    
+    // Hide modal
+    function hideModal() {
+        modal.classList.add('hidden');
+    }
+    
+    closeModal.addEventListener('click', hideModal);
+    cancelBtn.addEventListener('click', hideModal);
+    
+    // Close modal on outside click
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            hideModal();
+        }
+    });
+    
+    // Form submission
+    userForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        const formData = {
+            name: document.getElementById('userName').value,
+            email: document.getElementById('userEmail').value,
+            role: document.getElementById('userRole').value,
+            company: document.getElementById('userCompany').value,
+            password: document.getElementById('userPassword').value
+        };
+        
+        // Here you would typically send the data to your API
+        console.log('Creating user:', formData);
+        
+        // For demo purposes, add to table
+        addUserToTable(formData);
+        
+        hideModal();
+        userForm.reset();
+    });
+    
+    // Search and filter functionality
+    const searchInput = document.getElementById('userSearch');
+    const roleFilter = document.getElementById('roleFilter');
+    const companyFilter = document.getElementById('companyFilter');
+    const statusFilter = document.getElementById('statusFilter');
+    
+    [searchInput, roleFilter, companyFilter, statusFilter].forEach(input => {
+        input.addEventListener('change', filterUsers);
+        input.addEventListener('input', filterUsers);
+    });
+}
+
+function addUserToTable(userData) {
+    const tbody = document.getElementById('usersTableBody');
+    const newRow = document.createElement('tr');
+    newRow.className = 'hover:bg-gray-50';
+    
+    const roleBadge = getRoleBadge(userData.role);
+    
+    newRow.innerHTML = `
+        <td class="px-6 py-4 whitespace-nowrap">
+            <div class="flex items-center">
+                <img class="h-10 w-10 rounded-full" src="https://ui-avatars.com/api/?name=${encodeURIComponent(userData.name)}&background=667eea&color=fff" alt="">
+                <div class="ml-4">
+                    <div class="text-sm font-medium text-gray-900">${userData.name}</div>
+                    <div class="text-sm text-gray-500">${userData.email}</div>
+                </div>
+            </div>
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap">
+            ${roleBadge}
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${userData.company}</td>
+        <td class="px-6 py-4 whitespace-nowrap">
+            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Active</span>
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Just now</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+            <button class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
+            <button class="text-red-600 hover:text-red-900">Delete</button>
+        </td>
+    `;
+    
+    tbody.insertBefore(newRow, tbody.firstChild);
+}
+
+function getRoleBadge(role) {
+    const badges = {
+        'super_admin': '<span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">Super Admin</span>',
+        'company_admin': '<span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Company Admin</span>',
+        'agent': '<span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">Agent</span>'
+    };
+    return badges[role] || badges['agent'];
+}
+
+function filterUsers() {
+    // This would implement search and filtering logic
+    console.log('Filtering users...');
+}
+</script>

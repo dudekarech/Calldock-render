@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CallDocker WebRTC Demo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .video-container {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="min-h-screen">
+        <!-- Header -->
+        <header class="bg-white shadow-sm border-b">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center py-4">
+                    <h1 class="text-2xl font-bold text-gray-900">CallDocker WebRTC Demo</h1>
+                    <div class="flex space-x-4">
+                        <button id="startCallBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                            Start Call
+                        </button>
+                        <button id="endCallBtn" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors" disabled>
+                            End Call
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Call Controls -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-xl font-semibold text-gray-900 mb-4">Call Controls</h2>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Call ID</label>
+                            <input type="text" id="callIdInput" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter call ID or leave empty for new call">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Customer Name</label>
+                            <input type="text" id="customerNameInput" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter customer name">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Customer Email</label>
+                            <input type="email" id="customerEmailInput" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter customer email">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Customer Phone</label>
+                            <input type="tel" id="customerPhoneInput" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter customer phone">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Call Status -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-xl font-semibold text-gray-900 mb-4">Call Status</h2>
+                    
+                    <div class="space-y-4">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-3 h-3 bg-gray-400 rounded-full" id="statusIndicator"></div>
+                            <span class="text-sm text-gray-600" id="statusText">Idle</span>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Current Call ID</label>
+                            <input type="text" id="currentCallId" class="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md" readonly>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Connection State</label>
+                            <input type="text" id="connectionState" class="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md" readonly>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Video Container -->
+            <div class="mt-8">
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-xl font-semibold text-gray-900 mb-4">Video Call</h2>
+                    
+                    <div class="video-container rounded-lg p-8 text-center">
+                        <div class="text-white text-lg mb-4">Video call interface will appear here</div>
+                        <div class="text-white text-sm opacity-75">Start a call to see the WebRTC connection</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Logs -->
+            <div class="mt-8">
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-xl font-semibold text-gray-900 mb-4">Call Logs</h2>
+                    
+                    <div id="logsContainer" class="bg-gray-50 rounded-md p-4 h-64 overflow-y-auto">
+                        <div class="text-gray-500 text-sm">No logs yet...</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        class CallDockerWebRTC {
+            constructor() {
+                this.callId = null;
+                this.peerConnection = null;
+                this.localStream = null;
+                this.remoteStream = null;
+                this.callServiceUrl = 'http://localhost:8081';
+                
+                this.initializeElements();
+                this.bindEvents();
+            }
+
+            initializeElements() {
+                this.startCallBtn = document.getElementById('startCallBtn');
+                this.endCallBtn = document.getElementById('endCallBtn');
+                this.callIdInput = document.getElementById('callIdInput');
+                this.customerNameInput = document.getElementById('customerNameInput');
+                this.customerEmailInput = document.getElementById('customerEmailInput');
+                this.customerPhoneInput = document.getElementById('customerPhoneInput');
+                this.statusIndicator = document.getElementById('statusIndicator');
+                this.statusText = document.getElementById('statusText');
+                this.currentCallId = document.getElementById('currentCallId');
+                this.connectionState = document.getElementById('connectionState');
+                this.logsContainer = document.getElementById('logsContainer');
+            }
+
+            bindEvents() {
+                this.startCallBtn.addEventListener('click', () => this.startCall());
+                this.endCallBtn.addEventListener('click', () => this.endCall());
+            }
+
+            async startCall() {
+                try {
+                    this.log('Starting call...');
+                    this.updateStatus('connecting', 'Connecting...');
+                    
+                    // Create call
+                    const callData = {
+                        company_id: '550e8400-e29b-41d4-a716-446655440000', // Demo company ID
+                        customer_name: this.customerNameInput.value || 'Demo Customer',
+                        customer_email: this.customerEmailInput.value || 'demo@example.com',
+                        customer_phone: this.customerPhoneInput.value || '+1234567890',
+                        direction: 'inbound',
+                        metadata: {
+                            source: 'web_demo',
+                            skills_required: ['general_support']
+                        }
+                    };
+
+                    const response = await fetch(`${this.callServiceUrl}/calls`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(callData)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const result = await response.json();
+                    this.callId = result.data.id;
+                    this.currentCallId.value = this.callId;
+                    
+                    this.log(`Call created with ID: ${this.callId}`);
+                    this.updateStatus('connected', 'Connected');
+                    
+                    // Initialize WebRTC
+                    await this.initializeWebRTC();
+                    
+                    this.startCallBtn.disabled = true;
+                    this.endCallBtn.disabled = false;
+                    
+                } catch (error) {
+                    this.log(`Error starting call: ${error.message}`, 'error');
+                    this.updateStatus('error', 'Error');
+                }
+            }
+
+            async initializeWebRTC() {
+                try {
+                    this.log('Initializing WebRTC...');
+                    
+                    // Create peer connection
+                    this.peerConnection = new RTCPeerConnection({
+                        iceServers: [
+                            { urls: 'stun:stun.l.google.com:19302' },
+                            { urls: 'stun:stun1.l.google.com:19302' }
+                        ]
+                    });
+
+                    // Get user media
+                    this.localStream = await navigator.mediaDevices.getUserMedia({
+                        video: true,
+                        audio: true
+                    });
+
+                    // Add local stream to peer connection
+                    this.localStream.getTracks().forEach(track => {
+                        this.peerConnection.addTrack(track, this.localStream);
+                    });
+
+                    // Handle ICE candidates
+                    this.peerConnection.onicecandidate = (event) => {
+                        if (event.candidate) {
+                            this.log('ICE candidate generated');
+                            this.sendIceCandidate(event.candidate);
+                        }
+                    };
+
+                    // Handle connection state changes
+                    this.peerConnection.onconnectionstatechange = () => {
+                        this.log(`Connection state: ${this.peerConnection.connectionState}`);
+                        this.connectionState.value = this.peerConnection.connectionState;
+                    };
+
+                    // Create offer
+                    const offer = await this.peerConnection.createOffer();
+                    await this.peerConnection.setLocalDescription(offer);
+                    
+                    this.log('WebRTC offer created');
+                    
+                } catch (error) {
+                    this.log(`Error initializing WebRTC: ${error.message}`, 'error');
+                }
+            }
+
+            async sendIceCandidate(candidate) {
+                try {
+                    const signal = {
+                        call_id: this.callId,
+                        signal_type: 'IceCandidate',
+                        data: {
+                            candidate: candidate.candidate
+                        },
+                        timestamp: new Date().toISOString()
+                    };
+
+                    await fetch(`${this.callServiceUrl}/webrtc/ice-candidate`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(signal)
+                    });
+
+                    this.log('ICE candidate sent');
+                } catch (error) {
+                    this.log(`Error sending ICE candidate: ${error.message}`, 'error');
+                }
+            }
+
+            async endCall() {
+                try {
+                    this.log('Ending call...');
+                    
+                    if (this.peerConnection) {
+                        this.peerConnection.close();
+                        this.peerConnection = null;
+                    }
+                    
+                    if (this.localStream) {
+                        this.localStream.getTracks().forEach(track => track.stop());
+                        this.localStream = null;
+                    }
+                    
+                    this.updateStatus('idle', 'Idle');
+                    this.currentCallId.value = '';
+                    this.connectionState.value = '';
+                    
+                    this.startCallBtn.disabled = false;
+                    this.endCallBtn.disabled = true;
+                    
+                    this.log('Call ended');
+                    
+                } catch (error) {
+                    this.log(`Error ending call: ${error.message}`, 'error');
+                }
+            }
+
+            updateStatus(status, text) {
+                this.statusText.textContent = text;
+                
+                // Update status indicator color
+                this.statusIndicator.className = 'w-3 h-3 rounded-full';
+                switch (status) {
+                    case 'idle':
+                        this.statusIndicator.classList.add('bg-gray-400');
+                        break;
+                    case 'connecting':
+                        this.statusIndicator.classList.add('bg-yellow-400');
+                        break;
+                    case 'connected':
+                        this.statusIndicator.classList.add('bg-green-400');
+                        break;
+                    case 'error':
+                        this.statusIndicator.classList.add('bg-red-400');
+                        break;
+                }
+            }
+
+            log(message, type = 'info') {
+                const timestamp = new Date().toLocaleTimeString();
+                const logEntry = document.createElement('div');
+                logEntry.className = `text-sm mb-2 ${type === 'error' ? 'text-red-600' : 'text-gray-700'}`;
+                logEntry.textContent = `[${timestamp}] ${message}`;
+                
+                this.logsContainer.appendChild(logEntry);
+                this.logsContainer.scrollTop = this.logsContainer.scrollHeight;
+            }
+        }
+
+        // Initialize the WebRTC demo when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new CallDockerWebRTC();
+        });
+    </script>
+</body>
+</html>

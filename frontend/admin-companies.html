@@ -1,0 +1,427 @@
+<!-- Companies Management Page Content -->
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex justify-between items-center">
+        <div>
+            <h3 class="text-lg font-medium text-gray-900">Company Management</h3>
+            <p class="text-sm text-gray-600">Manage companies, their settings, and approval status</p>
+        </div>
+        <button id="addCompanyBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center">
+            <i class="fas fa-plus mr-2"></i>
+            Add Company
+        </button>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                    <i class="fas fa-building text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Total Companies</p>
+                    <p class="text-2xl font-semibold text-gray-900">89</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-green-100 text-green-600">
+                    <i class="fas fa-check-circle text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Active</p>
+                    <p class="text-2xl font-semibold text-gray-900">67</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">
+                    <i class="fas fa-clock text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Pending</p>
+                    <p class="text-2xl font-semibold text-gray-900">12</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-red-100 text-red-600">
+                    <i class="fas fa-pause-circle text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Suspended</p>
+                    <p class="text-2xl font-semibold text-gray-900">10</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Search Companies</label>
+                <input type="text" id="companySearch" placeholder="Search by name, domain..." class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                <select id="statusFilter" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">All Status</option>
+                    <option value="active">Active</option>
+                    <option value="pending">Pending</option>
+                    <option value="suspended">Suspended</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Plan</label>
+                <select id="planFilter" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">All Plans</option>
+                    <option value="starter">Starter</option>
+                    <option value="professional">Professional</option>
+                    <option value="enterprise">Enterprise</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
+                <select id="sortFilter" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="name">Name</option>
+                    <option value="created">Created Date</option>
+                    <option value="users">User Count</option>
+                    <option value="status">Status</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Companies Table -->
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <div class="flex justify-between items-center">
+                <h3 class="text-lg font-medium text-gray-900">Companies</h3>
+                <div class="text-sm text-gray-600">
+                    Showing <span id="showingCount">1-10</span> of <span id="totalCount">89</span> companies
+                </div>
+            </div>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plan</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Users</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="companiesTableBody" class="bg-white divide-y divide-gray-200">
+                    <!-- Sample company rows -->
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="h-10 w-10 rounded-lg bg-blue-600 flex items-center justify-center">
+                                    <span class="text-white font-semibold text-lg">DC</span>
+                                </div>
+                                <div class="ml-4">
+                                    <div class="text-sm font-medium text-gray-900">Demo Company 1</div>
+                                    <div class="text-sm text-gray-500">demo1.com</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">Professional</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">24</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Active</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Jan 15, 2024</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <button class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
+                            <button class="text-yellow-600 hover:text-yellow-900 mr-3">Suspend</button>
+                            <button class="text-red-600 hover:text-red-900">Delete</button>
+                        </td>
+                    </tr>
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="h-10 w-10 rounded-lg bg-green-600 flex items-center justify-center">
+                                    <span class="text-white font-semibold text-lg">TC</span>
+                                </div>
+                                <div class="ml-4">
+                                    <div class="text-sm font-medium text-gray-900">Tech Corp</div>
+                                    <div class="text-sm text-gray-500">techcorp.com</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">Enterprise</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">156</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Active</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Mar 22, 2024</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <button class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
+                            <button class="text-yellow-600 hover:text-yellow-900 mr-3">Suspend</button>
+                            <button class="text-red-600 hover:text-red-900">Delete</button>
+                        </td>
+                    </tr>
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="h-10 w-10 rounded-lg bg-yellow-600 flex items-center justify-center">
+                                    <span class="text-white font-semibold text-lg">SC</span>
+                                </div>
+                                <div class="ml-4">
+                                    <div class="text-sm font-medium text-gray-900">Startup Inc</div>
+                                    <div class="text-sm text-gray-500">startupinc.com</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">Starter</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">8</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Pending</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Apr 10, 2024</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <button class="text-green-600 hover:text-green-900 mr-3">Approve</button>
+                            <button class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
+                            <button class="text-red-600 hover:text-red-900">Reject</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+            <div class="flex-1 flex justify-between sm:hidden">
+                <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Previous</button>
+                <button class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Next</button>
+            </div>
+            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                    <p class="text-sm text-gray-700">
+                        Showing <span class="font-medium">1</span> to <span class="font-medium">10</span> of <span class="font-medium">89</span> results
+                    </p>
+                </div>
+                <div>
+                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                        <button class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">Previous</button>
+                        <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">1</button>
+                        <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">2</button>
+                        <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">3</button>
+                        <button class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">Next</button>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Company Modal -->
+<div id="companyModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-medium text-gray-900" id="modalTitle">Add New Company</h3>
+                <button id="closeModal" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form id="companyForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Company Name</label>
+                    <input type="text" id="companyName" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Domain</label>
+                    <input type="text" id="companyDomain" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="example.com">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Plan</label>
+                    <select id="companyPlan" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">Select Plan</option>
+                        <option value="starter">Starter</option>
+                        <option value="professional">Professional</option>
+                        <option value="enterprise">Enterprise</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <select id="companyStatus" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">Select Status</option>
+                        <option value="active">Active</option>
+                        <option value="pending">Pending</option>
+                        <option value="suspended">Suspended</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Contact Email</label>
+                    <input type="email" id="contactEmail" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button type="button" id="cancelBtn" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700">Save Company</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Companies page functionality
+function loadCompaniesPage() {
+    const content = document.getElementById('companies-content');
+    content.innerHTML = document.getElementById('companies-page-template').innerHTML;
+    
+    // Initialize companies page functionality
+    initializeCompaniesPage();
+}
+
+function initializeCompaniesPage() {
+    // Modal functionality
+    const modal = document.getElementById('companyModal');
+    const addCompanyBtn = document.getElementById('addCompanyBtn');
+    const closeModal = document.getElementById('closeModal');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const companyForm = document.getElementById('companyForm');
+    
+    // Show modal
+    addCompanyBtn.addEventListener('click', () => {
+        modal.classList.remove('hidden');
+        document.getElementById('modalTitle').textContent = 'Add New Company';
+        companyForm.reset();
+    });
+    
+    // Hide modal
+    function hideModal() {
+        modal.classList.add('hidden');
+    }
+    
+    closeModal.addEventListener('click', hideModal);
+    cancelBtn.addEventListener('click', hideModal);
+    
+    // Close modal on outside click
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            hideModal();
+        }
+    });
+    
+    // Form submission
+    companyForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        const formData = {
+            name: document.getElementById('companyName').value,
+            domain: document.getElementById('companyDomain').value,
+            plan: document.getElementById('companyPlan').value,
+            status: document.getElementById('companyStatus').value,
+            contactEmail: document.getElementById('contactEmail').value
+        };
+        
+        // Here you would typically send the data to your API
+        console.log('Creating company:', formData);
+        
+        // For demo purposes, add to table
+        addCompanyToTable(formData);
+        
+        hideModal();
+        companyForm.reset();
+    });
+    
+    // Search and filter functionality
+    const searchInput = document.getElementById('companySearch');
+    const statusFilter = document.getElementById('statusFilter');
+    const planFilter = document.getElementById('planFilter');
+    const sortFilter = document.getElementById('sortFilter');
+    
+    [searchInput, statusFilter, planFilter, sortFilter].forEach(input => {
+        input.addEventListener('change', filterCompanies);
+        input.addEventListener('input', filterCompanies);
+    });
+}
+
+function addCompanyToTable(companyData) {
+    const tbody = document.getElementById('companiesTableBody');
+    const newRow = document.createElement('tr');
+    newRow.className = 'hover:bg-gray-50';
+    
+    const planBadge = getPlanBadge(companyData.plan);
+    const statusBadge = getStatusBadge(companyData.status);
+    const initials = companyData.name.split(' ').map(word => word[0]).join('').toUpperCase();
+    
+    newRow.innerHTML = `
+        <td class="px-6 py-4 whitespace-nowrap">
+            <div class="flex items-center">
+                <div class="h-10 w-10 rounded-lg bg-blue-600 flex items-center justify-center">
+                    <span class="text-white font-semibold text-lg">${initials}</span>
+                </div>
+                <div class="ml-4">
+                    <div class="text-sm font-medium text-gray-900">${companyData.name}</div>
+                    <div class="text-sm text-gray-500">${companyData.domain}</div>
+                </div>
+            </div>
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap">
+            ${planBadge}
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">0</td>
+        <td class="px-6 py-4 whitespace-nowrap">
+            ${statusBadge}
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Just now</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+            <button class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
+            <button class="text-yellow-600 hover:text-yellow-900 mr-3">Suspend</button>
+            <button class="text-red-600 hover:text-red-900">Delete</button>
+        </td>
+    `;
+    
+    tbody.insertBefore(newRow, tbody.firstChild);
+}
+
+function getPlanBadge(plan) {
+    const badges = {
+        'starter': '<span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">Starter</span>',
+        'professional': '<span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">Professional</span>',
+        'enterprise': '<span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">Enterprise</span>'
+    };
+    return badges[plan] || badges['starter'];
+}
+
+function getStatusBadge(status) {
+    const badges = {
+        'active': '<span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Active</span>',
+        'pending': '<span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Pending</span>',
+        'suspended': '<span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Suspended</span>'
+    };
+    return badges[status] || badges['pending'];
+}
+
+function filterCompanies() {
+    // This would implement search and filtering logic
+    console.log('Filtering companies...');
+}
+</script>

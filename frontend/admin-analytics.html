@@ -1,0 +1,359 @@
+<!-- Analytics Page Content -->
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex justify-between items-center">
+        <div>
+            <h3 class="text-lg font-medium text-gray-900">Analytics & Reports</h3>
+            <p class="text-sm text-gray-600">Comprehensive insights into your CallDocker system performance</p>
+        </div>
+        <div class="flex space-x-3">
+            <select id="dateRange" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="7d">Last 7 days</option>
+                <option value="30d">Last 30 days</option>
+                <option value="90d">Last 90 days</option>
+                <option value="1y">Last year</option>
+            </select>
+            <button class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                <i class="fas fa-download mr-2"></i>
+                Export Report
+            </button>
+        </div>
+    </div>
+
+    <!-- Key Metrics -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Total Calls</p>
+                    <p class="text-2xl font-semibold text-gray-900">12,847</p>
+                    <p class="text-sm text-green-600">+12.5% from last period</p>
+                </div>
+                <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                    <i class="fas fa-phone text-xl"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Avg Call Duration</p>
+                    <p class="text-2xl font-semibold text-gray-900">4m 32s</p>
+                    <p class="text-sm text-green-600">+8.2% from last period</p>
+                </div>
+                <div class="p-3 rounded-full bg-green-100 text-green-600">
+                    <i class="fas fa-clock text-xl"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Success Rate</p>
+                    <p class="text-2xl font-semibold text-gray-900">94.2%</p>
+                    <p class="text-sm text-green-600">+2.1% from last period</p>
+                </div>
+                <div class="p-3 rounded-full bg-purple-100 text-purple-600">
+                    <i class="fas fa-chart-line text-xl"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Active Users</p>
+                    <p class="text-2xl font-semibold text-gray-900">1,234</p>
+                    <p class="text-sm text-green-600">+5.7% from last period</p>
+                </div>
+                <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">
+                    <i class="fas fa-users text-xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row 1 -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Call Volume Chart -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-900">Call Volume Trends</h3>
+                <div class="flex space-x-2">
+                    <button class="px-3 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">Daily</button>
+                    <button class="px-3 py-1 text-xs bg-gray-100 text-gray-600 rounded-full">Weekly</button>
+                    <button class="px-3 py-1 text-xs bg-gray-100 text-gray-600 rounded-full">Monthly</button>
+                </div>
+            </div>
+            <canvas id="callVolumeChart" width="400" height="200"></canvas>
+        </div>
+        
+        <!-- Call Duration Distribution -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Call Duration Distribution</h3>
+            <canvas id="callDurationChart" width="400" height="200"></canvas>
+        </div>
+    </div>
+
+    <!-- Charts Row 2 -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Company Performance -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Top Performing Companies</h3>
+            <div class="space-y-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                            <span class="text-white text-sm font-semibold">TC</span>
+                        </div>
+                        <span class="text-sm font-medium text-gray-900">Tech Corp</span>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm font-semibold text-gray-900">2,847 calls</p>
+                        <p class="text-xs text-green-600">+15.2%</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
+                            <span class="text-white text-sm font-semibold">DC</span>
+                        </div>
+                        <span class="text-sm font-medium text-gray-900">Demo Company 1</span>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm font-semibold text-gray-900">1,923 calls</p>
+                        <p class="text-xs text-green-600">+8.7%</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
+                            <span class="text-white text-sm font-semibold">SC</span>
+                        </div>
+                        <span class="text-sm font-medium text-gray-900">Startup Inc</span>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm font-semibold text-gray-900">1,456 calls</p>
+                        <p class="text-xs text-red-600">-2.1%</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Agent Performance -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Top Performing Agents</h3>
+            <div class="space-y-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <img class="w-8 h-8 rounded-full" src="https://ui-avatars.com/api/?name=John+Doe&background=667eea&color=fff" alt="">
+                        <span class="text-sm font-medium text-gray-900">John Doe</span>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm font-semibold text-gray-900">156 calls</p>
+                        <p class="text-xs text-green-600">98.2% success</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <img class="w-8 h-8 rounded-full" src="https://ui-avatars.com/api/?name=Jane+Smith&background=10b981&color=fff" alt="">
+                        <span class="text-sm font-medium text-gray-900">Jane Smith</span>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm font-semibold text-gray-900">142 calls</p>
+                        <p class="text-xs text-green-600">96.8% success</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <img class="w-8 h-8 rounded-full" src="https://ui-avatars.com/api/?name=Mike+Johnson&background=f59e0b&color=fff" alt="">
+                        <span class="text-sm font-medium text-gray-900">Mike Johnson</span>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm font-semibold text-gray-900">128 calls</p>
+                        <p class="text-xs text-green-600">95.1% success</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Metrics Table -->
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-medium text-gray-900">Detailed Metrics</h3>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Metric</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Period</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Previous Period</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Change</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trend</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Total Calls</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">12,847</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">11,423</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600">+12.5%</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <i class="fas fa-arrow-up text-green-600"></i>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Average Call Duration</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">4m 32s</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">4m 12s</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600">+8.2%</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <i class="fas fa-arrow-up text-green-600"></i>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Call Success Rate</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">94.2%</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">92.1%</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600">+2.1%</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <i class="fas fa-arrow-up text-green-600"></i>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Average Wait Time</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2.3m</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2.8m</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600">-17.9%</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <i class="fas fa-arrow-down text-green-600"></i>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Active Users</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">1,234</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">1,168</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600">+5.7%</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <i class="fas fa-arrow-up text-green-600"></i>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+// Analytics page functionality
+function loadAnalyticsPage() {
+    const content = document.getElementById('analytics-content');
+    content.innerHTML = document.getElementById('analytics-page-template').innerHTML;
+    
+    // Initialize analytics page functionality
+    initializeAnalyticsPage();
+}
+
+function initializeAnalyticsPage() {
+    // Initialize charts
+    initializeCallVolumeChart();
+    initializeCallDurationChart();
+    
+    // Date range change handler
+    const dateRange = document.getElementById('dateRange');
+    dateRange.addEventListener('change', updateCharts);
+}
+
+function initializeCallVolumeChart() {
+    const ctx = document.getElementById('callVolumeChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+            datasets: [{
+                label: 'Call Volume',
+                data: [156, 189, 234, 267, 198, 145, 123],
+                borderColor: 'rgb(59, 130, 246)',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.1)'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
+}
+
+function initializeCallDurationChart() {
+    const ctx = document.getElementById('callDurationChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['0-2 min', '2-5 min', '5-10 min', '10+ min'],
+            datasets: [{
+                data: [25, 45, 20, 10],
+                backgroundColor: [
+                    'rgb(59, 130, 246)',
+                    'rgb(16, 185, 129)',
+                    'rgb(245, 158, 11)',
+                    'rgb(239, 68, 68)'
+                ],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 20,
+                        usePointStyle: true
+                    }
+                }
+            }
+        }
+    });
+}
+
+function updateCharts() {
+    const dateRange = document.getElementById('dateRange').value;
+    console.log('Updating charts for date range:', dateRange);
+    
+    // Here you would typically fetch new data based on the selected date range
+    // and update the charts accordingly
+    
+    // For demo purposes, we'll just log the change
+    console.log('Charts updated for:', dateRange);
+}
+</script>

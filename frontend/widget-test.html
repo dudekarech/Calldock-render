@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CallDocker Widget Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen">
+        <!-- Header -->
+        <header class="bg-white shadow-sm border-b">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center py-6">
+                    <div class="flex items-center">
+                        <i class="fas fa-phone text-blue-600 text-2xl mr-3"></i>
+                        <h1 class="text-2xl font-bold text-gray-900">CallDocker Widget Test</h1>
+                    </div>
+                    <div class="text-sm text-gray-500">
+                        Testing embeddable call widget
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <!-- Hero Section -->
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-bold text-gray-900 mb-4">
+                    Test Your Call Widget
+                </h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    This page demonstrates how the CallDocker widget appears when embedded on a company website. 
+                    The widget should appear in the bottom-right corner of this page.
+                </p>
+            </div>
+
+            <!-- Content Sections -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
+                <div class="bg-white rounded-lg shadow-sm p-8">
+                    <div class="flex items-center mb-4">
+                        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
+                            <i class="fas fa-cog text-blue-600 text-xl"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold text-gray-900">Widget Features</h3>
+                    </div>
+                    <ul class="space-y-3 text-gray-600">
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-green-500 mr-3"></i>
+                            Customizable themes and colors
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-green-500 mr-3"></i>
+                            Multiple size options
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-green-500 mr-3"></i>
+                            Flexible positioning
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-green-500 mr-3"></i>
+                            Company logo integration
+                        </li>
+                        <li class="flex items-center">
+                            <i class="fas fa-check text-green-500 mr-3"></i>
+                            Responsive design
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-sm p-8">
+                    <div class="flex items-center mb-4">
+                        <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mr-4">
+                            <i class="fas fa-code text-green-600 text-xl"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold text-gray-900">Easy Integration</h3>
+                    </div>
+                    <div class="space-y-4 text-gray-600">
+                        <p>Simply add the generated embed code to your website:</p>
+                        <div class="bg-gray-100 rounded-lg p-4">
+                            <code class="text-sm">
+                                &lt;script src="widget.js"&gt;&lt;/script&gt;
+                            </code>
+                        </div>
+                        <p class="text-sm">The widget will automatically appear and handle all call functionality.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Demo Content -->
+            <div class="bg-white rounded-lg shadow-sm p-8 mb-16">
+                <h3 class="text-2xl font-semibold text-gray-900 mb-6">Demo Content</h3>
+                <div class="prose max-w-none">
+                    <p class="text-gray-600 mb-4">
+                        This is a demonstration page showing how the CallDocker widget integrates seamlessly with any website. 
+                        The widget appears as a floating button that users can click to initiate calls with your support team.
+                    </p>
+                    <p class="text-gray-600 mb-4">
+                        The widget is fully customizable through the admin dashboard, allowing you to:
+                    </p>
+                    <ul class="list-disc list-inside text-gray-600 mb-4 space-y-2">
+                        <li>Choose from multiple themes (default, dark, brand colors)</li>
+                        <li>Select different sizes (compact, standard, large)</li>
+                        <li>Position the widget in any corner of the screen</li>
+                        <li>Add your company logo and branding</li>
+                        <li>Customize the call flow and routing</li>
+                    </ul>
+                    <p class="text-gray-600">
+                        The widget automatically handles call routing, agent assignment, and provides a smooth user experience 
+                        for your customers seeking support.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Test Controls -->
+            <div class="bg-white rounded-lg shadow-sm p-8">
+                <h3 class="text-2xl font-semibold text-gray-900 mb-6">Widget Test Controls</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <button onclick="testWidgetTheme('default')" class="btn btn-primary">
+                        <i class="fas fa-palette mr-2"></i>Default Theme
+                    </button>
+                    <button onclick="testWidgetTheme('dark')" class="btn btn-secondary">
+                        <i class="fas fa-moon mr-2"></i>Dark Theme
+                    </button>
+                    <button onclick="testWidgetTheme('brand')" class="btn btn-secondary">
+                        <i class="fas fa-star mr-2"></i>Brand Theme
+                    </button>
+                </div>
+                <div class="mt-4 text-sm text-gray-500">
+                    Click the buttons above to test different widget themes. The widget will update in real-time.
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="bg-gray-800 text-white py-8">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                <p>&copy; 2024 CallDocker. All rights reserved.</p>
+                <p class="text-gray-400 text-sm mt-2">Professional call management for modern businesses</p>
+            </div>
+        </footer>
+    </div>
+
+    <style>
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+        
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+            border: 1px solid #d1d5db;
+        }
+        
+        .btn-secondary:hover {
+            background: #e5e7eb;
+            color: #1f2937;
+        }
+    </style>
+
+    <!-- Widget Script -->
+    <script src="/js/widget.js"></script>
+    <script>
+        // Initialize widget with test configuration
+        window.CallDockerWidgetConfig = {
+            companyId: 'test-company',
+            theme: 'default',
+            size: 'standard',
+            position: 'bottom-right',
+            logo: ''
+        };
+
+        // Test functions
+        function testWidgetTheme(theme) {
+            if (window.CallDockerWidget && window.CallDockerWidget.isInitialized) {
+                window.CallDockerWidget.destroy();
+            }
+            
+            window.CallDockerWidgetConfig.theme = theme;
+            CallDockerWidget.init(window.CallDockerWidgetConfig);
+        }
+
+        // Initialize widget when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                CallDockerWidget.init(window.CallDockerWidgetConfig);
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
+

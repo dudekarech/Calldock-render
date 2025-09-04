@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Widget Test</title>
+    
+    <!-- Enhanced Widget Styles -->
+    <link rel="stylesheet" href="frontend/css/widget-styles.css">
+    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .test-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .test-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .widget-demo {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 Enhanced Widget Test Page</h1>
+        <p>This page tests the enhanced floating widget functionality.</p>
+        
+        <div class="test-section">
+            <h3>📋 Test Controls</h3>
+            <button class="test-button" onclick="runAllTests()">Run All Tests</button>
+            <button class="test-button" onclick="clearResults()">Clear Results</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>🎨 Theme Tests</h3>
+            <button class="test-button" onclick="testTheme('default')">Default Theme</button>
+            <button class="test-button" onclick="testTheme('dark')">Dark Theme</button>
+            <button class="test-button" onclick="testTheme('brand')">Brand Theme</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>📏 Size Tests</h3>
+            <button class="test-button" onclick="testSize('compact')">Compact Size</button>
+            <button class="test-button" onclick="testSize('standard')">Standard Size</button>
+            <button class="test-button" onclick="testSize('large')">Large Size</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>📍 Position Tests</h3>
+            <button class="test-button" onclick="testPosition()">Test Position</button>
+            <button class="test-button" onclick="resetPosition()">Reset Position</button>
+        </div>
+        
+        <div class="test-section">
+            <h3>📊 Test Results</h3>
+            <div id="testResults"></div>
+        </div>
+    </div>
+    
+    <!-- Widget Demo -->
+    <div class="widget-demo">
+        <h4>Widget Demo</h4>
+        <p>This simulates the widget for testing.</p>
+        <div id="demoWidget" class="floating-widget-enhanced widget-theme-default widget-size-standard">
+            <div class="mini-widget-enhanced">
+                <div class="mini-widget-content">
+                    <div class="mini-widget-avatar">
+                        <i class="fas fa-phone text-white text-sm">📞</i>
+                    </div>
+                    <div class="mini-widget-info">
+                        <div class="mini-widget-name">Test Widget</div>
+                        <div class="mini-widget-timer">00:00</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Enhanced Widget Script -->
+    <script src="frontend/js/widget-enhancements.js"></script>
+    
+    <script>
+        // Test Functions
+        function addResult(message, isSuccess = true) {
+            const resultsDiv = document.getElementById('testResults');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `test-result ${isSuccess ? 'test-success' : 'test-error'}`;
+            resultDiv.textContent = message;
+            resultsDiv.appendChild(resultDiv);
+        }
+        
+        function clearResults() {
+            document.getElementById('testResults').innerHTML = '';
+        }
+        
+        function testTheme(theme) {
+            try {
+                if (window.enhancedWidget) {
+                    window.enhancedWidget.setTheme(theme);
+                    addResult(`✅ Theme '${theme}' applied successfully`);
+                } else {
+                    addResult(`❌ Enhanced widget not available`, false);
+                }
+            } catch (error) {
+                addResult(`❌ Theme test failed: ${error.message}`, false);
+            }
+        }
+        
+        function testSize(size) {
+            try {
+                if (window.enhancedWidget) {
+                    window.enhancedWidget.setSize(size);
+                    addResult(`✅ Size '${size}' applied successfully`);
+                } else {
+                    addResult(`❌ Enhanced widget not available`, false);
+                }
+            } catch (error) {
+                addResult(`❌ Size test failed: ${error.message}`, false);
+            }
+        }
+        
+        function testPosition() {
+            try {
+                if (window.enhancedWidget) {
+                    const position = window.enhancedWidget.getPosition();
+                    addResult(`✅ Current position: ${JSON.stringify(position)}`);
+                } else {
+                    addResult(`❌ Enhanced widget not available`, false);
+                }
+            } catch (error) {
+                addResult(`❌ Position test failed: ${error.message}`, false);
+            }
+        }
+        
+        function resetPosition() {
+            try {
+                if (window.enhancedWidget) {
+                    window.enhancedWidget.resetPosition();
+                    addResult(`✅ Position reset successfully`);
+                } else {
+                    addResult(`❌ Enhanced widget not available`, false);
+                }
+            } catch (error) {
+                addResult(`❌ Position reset failed: ${error.message}`, false);
+            }
+        }
+        
+        function runAllTests() {
+            clearResults();
+            addResult('🚀 Starting Enhanced Widget Tests...');
+            
+            // Test 1: Enhanced Widget Loading
+            if (typeof window.enhancedWidget !== 'undefined') {
+                addResult('✅ Enhanced widget loaded successfully');
+                addResult(`   - Current theme: ${window.enhancedWidget.getCurrentTheme()}`);
+                addResult(`   - Current size: ${window.enhancedWidget.getCurrentSize()}`);
+                addResult(`   - Current position: ${JSON.stringify(window.enhancedWidget.getPosition())}`);
+            } else {
+                addResult('❌ Enhanced widget not loaded', false);
+            }
+            
+            // Test 2: CSS Classes
+            const demoWidget = document.getElementById('demoWidget');
+            if (demoWidget) {
+                const requiredClasses = ['floating-widget-enhanced', 'widget-theme-default', 'widget-size-standard'];
+                requiredClasses.forEach(className => {
+                    if (demoWidget.classList.contains(className)) {
+                        addResult(`✅ CSS class '${className}' present`);
+                    } else {
+                        addResult(`❌ CSS class '${className}' missing`, false);
+                    }
+                });
+            }
+            
+            // Test 3: LocalStorage
+            try {
+                const savedTheme = localStorage.getItem('widgetTheme');
+                const savedSize = localStorage.getItem('widgetSize');
+                const savedPosition = localStorage.getItem('widgetPosition');
+                
+                addResult(`✅ Theme preference: ${savedTheme || 'none'}`);
+                addResult(`✅ Size preference: ${savedSize || 'none'}`);
+                addResult(`✅ Position saved: ${savedPosition ? 'yes' : 'no'}`);
+            } catch (error) {
+                addResult(`❌ LocalStorage test failed: ${error.message}`, false);
+            }
+            
+            addResult('🎉 All tests completed!');
+        }
+        
+        // Auto-run tests when page loads
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                addResult('📋 Page loaded, enhanced widget should be available');
+                if (window.enhancedWidget) {
+                    addResult('✅ Enhanced widget detected');
+                } else {
+                    addResult('❌ Enhanced widget not detected', false);
+                }
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

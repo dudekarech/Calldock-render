@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CallDocker Widget Preview</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .widget-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        
+        .widget-button {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+        }
+        
+        .widget-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 12px 35px rgba(59, 130, 246, 0.4);
+        }
+        
+        .widget-button:active {
+            transform: scale(0.95);
+        }
+        
+        .widget-popup {
+            position: absolute;
+            bottom: 80px;
+            right: 0;
+            width: 350px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+            transform: translateY(20px) scale(0.9);
+            opacity: 0;
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+        
+        .widget-popup.show {
+            transform: translateY(0) scale(1);
+            opacity: 1;
+        }
+        
+        .widget-header {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .widget-content {
+            padding: 20px;
+        }
+        
+        .flow-step {
+            padding: 15px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .flow-step:hover {
+            border-color: #3b82f6;
+            background: #f0f9ff;
+        }
+        
+        .flow-step.active {
+            border-color: #10b981;
+            background: #ecfdf5;
+        }
+        
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .close-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="min-h-screen flex items-center justify-center">
+        <div class="text-center text-white">
+            <h1 class="text-4xl font-bold mb-4">CallDocker Widget Preview</h1>
+            <p class="text-xl mb-8">This is how your widget will appear on your website</p>
+            <div class="bg-white bg-opacity-20 rounded-lg p-6 backdrop-blur-sm">
+                <h2 class="text-2xl font-semibold mb-4">Widget Features</h2>
+                <ul class="text-left space-y-2">
+                    <li><i class="fas fa-check mr-2"></i>Interactive IVR Flow</li>
+                    <li><i class="fas fa-check mr-2"></i>Customizable Theme</li>
+                    <li><i class="fas fa-check mr-2"></i>Responsive Design</li>
+                    <li><i class="fas fa-check mr-2"></i>Easy Integration</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Widget Container -->
+    <div class="widget-container">
+        <!-- Widget Popup -->
+        <div id="widget-popup" class="widget-popup">
+            <div class="widget-header">
+                <button class="close-btn" onclick="closeWidget()">
+                    <i class="fas fa-times"></i>
+                </button>
+                <h3 class="text-lg font-semibold">CallDocker Support</h3>
+                <p class="text-sm opacity-90">How can we help you today?</p>
+            </div>
+            <div class="widget-content">
+                <div id="flow-steps">
+                    <!-- Flow steps will be loaded here -->
+                </div>
+                <div class="text-center mt-4">
+                    <button class="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition">
+                        Start Conversation
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Widget Button -->
+        <div class="widget-button" onclick="toggleWidget()">
+            <i class="fas fa-phone"></i>
+        </div>
+    </div>
+
+    <script>
+        let widgetOpen = false;
+        let currentFlow = null;
+
+        // Get flow ID from URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const flowId = urlParams.get('flow');
+
+        async function loadFlow() {
+            if (!flowId) {
+                // Load default flow
+                currentFlow = {
+                    id: 'default',
+                    name: 'Default Support Flow',
+                    steps: [
+                        {
+                            id: 1,
+                            type: 'audio',
+                            title: 'Welcome Message',
+                            content: 'Welcome to CallDocker support. How can we help you today?'
+                        },
+                        {
+                            id: 2,
+                            type: 'menu',
+                            title: 'Choose Option',
+                            content: 'Please select an option:',
+                            options: [
+                                { key: '1', label: 'Technical Support' },
+                                { key: '2', label: 'Sales Inquiry' },
+                                { key: '3', label: 'Billing Question' }
+                            ]
+                        }
+                    ]
+                };
+            } else {
+                try {
+                    const response = await fetch(`/api/ivr/flows/${flowId}`);
+                    if (response.ok) {
+                        const result = await response.json();
+                        currentFlow = result.data;
+                    }
+                } catch (error) {
+                    console.error('Error loading flow:', error);
+                    loadDefaultFlow();
+                }
+            }
+            
+            renderFlow();
+        }
+
+        function loadDefaultFlow() {
+            currentFlow = {
+                id: 'default',
+                name: 'Default Support Flow',
+                steps: [
+                    {
+                        id: 1,
+                        type: 'audio',
+                        title: 'Welcome Message',
+                        content: 'Welcome to CallDocker support. How can we help you today?'
+                    },
+                    {
+                        id: 2,
+                        type: 'menu',
+                        title: 'Choose Option',
+                        content: 'Please select an option:',
+                        options: [
+                            { key: '1', label: 'Technical Support' },
+                            { key: '2', label: 'Sales Inquiry' },
+                            { key: '3', label: 'Billing Question' }
+                        ]
+                    }
+                ]
+            };
+        }
+
+        function renderFlow() {
+            const container = document.getElementById('flow-steps');
+            if (!container || !currentFlow) return;
+
+            container.innerHTML = currentFlow.steps.map(step => {
+                if (step.type === 'audio') {
+                    return `
+                        <div class="flow-step" data-step="${step.id}">
+                            <div class="flex items-center mb-2">
+                                <i class="fas fa-microphone text-blue-600 mr-2"></i>
+                                <span class="font-medium">${step.title}</span>
+                            </div>
+                            <p class="text-gray-600 text-sm">${step.content}</p>
+                        </div>
+                    `;
+                } else if (step.type === 'menu') {
+                    return `
+                        <div class="flow-step" data-step="${step.id}">
+                            <div class="flex items-center mb-2">
+                                <i class="fas fa-list text-purple-600 mr-2"></i>
+                                <span class="font-medium">${step.title}</span>
+                            </div>
+                            <p class="text-gray-600 text-sm mb-3">${step.content}</p>
+                            <div class="space-y-2">
+                                ${step.options.map(option => `
+                                    <div class="flex items-center p-2 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition">
+                                        <span class="w-6 h-6 bg-indigo-600 text-white text-xs rounded-full flex items-center justify-center mr-3">${option.key}</span>
+                                        <span class="text-sm">${option.label}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                } else if (step.type === 'transfer') {
+                    return `
+                        <div class="flow-step" data-step="${step.id}">
+                            <div class="flex items-center mb-2">
+                                <i class="fas fa-user text-orange-600 mr-2"></i>
+                                <span class="font-medium">${step.title}</span>
+                            </div>
+                            <p class="text-gray-600 text-sm">${step.content}</p>
+                        </div>
+                    `;
+                }
+                return '';
+            }).join('');
+        }
+
+        function toggleWidget() {
+            const popup = document.getElementById('widget-popup');
+            if (widgetOpen) {
+                popup.classList.remove('show');
+                widgetOpen = false;
+            } else {
+                popup.classList.add('show');
+                widgetOpen = true;
+            }
+        }
+
+        function closeWidget() {
+            const popup = document.getElementById('widget-popup');
+            popup.classList.remove('show');
+            widgetOpen = false;
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadFlow();
+        });
+
+        // Close widget when clicking outside
+        document.addEventListener('click', (e) => {
+            const widget = document.querySelector('.widget-container');
+            if (widgetOpen && !widget.contains(e.target)) {
+                closeWidget();
+            }
+        });
+    </script>
+</body>
+</html>
+

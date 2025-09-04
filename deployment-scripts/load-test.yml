@@ -1,0 +1,163 @@
+# CallDocker Load Testing Configuration
+# This file configures Artillery.js for load testing the CallDocker MVP
+
+config:
+  target: 'https://your-app-name.ondigitalocean.app'
+  phases:
+    # Warm-up phase
+    - duration: 60
+      arrivalRate: 1
+      name: "Warm up"
+    
+    # Ramp-up phase
+    - duration: 120
+      arrivalRate: 5
+      rampTo: 20
+      name: "Ramp up load"
+    
+    # Sustained load phase
+    - duration: 300
+      arrivalRate: 20
+      name: "Sustained load"
+    
+    # Peak load phase
+    - duration: 60
+      arrivalRate: 50
+      name: "Peak load"
+    
+    # Cool-down phase
+    - duration: 60
+      arrivalRate: 5
+      name: "Cool down"
+
+  defaults:
+    headers:
+      User-Agent: "CallDocker-LoadTest/1.0"
+      Accept: "application/json"
+
+  plugins:
+    metrics-by-endpoint:
+      useOnlyRequestNames: true
+
+scenarios:
+  # Health check scenario
+  - name: "Health Check"
+    weight: 10
+    flow:
+      - get:
+          url: "/health"
+          capture:
+            - json: "$.status"
+              as: "health_status"
+          expect:
+            - statusCode: 200
+            - hasProperty: "status"
+
+  # Landing page scenario
+  - name: "Landing Page"
+    weight: 30
+    flow:
+      - get:
+          url: "/"
+          expect:
+            - statusCode: 200
+            - contentType: "text/html"
+
+  # Admin login scenario
+  - name: "Admin Login"
+    weight: 20
+    flow:
+      - get:
+          url: "/admin-login"
+          expect:
+            - statusCode: 200
+            - contentType: "text/html"
+      
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "admin@calldocker.com"
+            password: "admin123"
+          capture:
+            - json: "$.token"
+              as: "auth_token"
+          expect:
+            - statusCode: 200
+            - hasProperty: "token"
+
+  # Authenticated admin scenario
+  - name: "Admin Dashboard"
+    weight: 15
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "admin@calldocker.com"
+            password: "admin123"
+          capture:
+            - json: "$.token"
+              as: "auth_token"
+      
+      - get:
+          url: "/admin"
+          headers:
+            Authorization: "Bearer {{ auth_token }}"
+          expect:
+            - statusCode: 200
+            - contentType: "text/html"
+      
+      - get:
+          url: "/api/ivr/flows"
+          headers:
+            Authorization: "Bearer {{ auth_token }}"
+          expect:
+            - statusCode: 200
+            - contentType: "application/json"
+
+  # IVR experience scenario
+  - name: "IVR Experience"
+    weight: 15
+    flow:
+      - get:
+          url: "/ivr-experience"
+          expect:
+            - statusCode: 200
+            - contentType: "text/html"
+      
+      - get:
+          url: "/api/ivr/analytics"
+          expect:
+            - statusCode: 200
+            - contentType: "application/json"
+
+  # Widget scenario
+  - name: "Call Widget"
+    weight: 10
+    flow:
+      - get:
+          url: "/widget-preview"
+          expect:
+            - statusCode: 200
+            - contentType: "text/html"
+      
+      - get:
+          url: "/js/widget.js"
+          expect:
+            - statusCode: 200
+            - contentType: "application/javascript"
+
+# Custom metrics
+before:
+  - log: "Starting CallDocker load test..."
+
+after:
+  - log: "Load test completed!"
+
+# Performance thresholds
+ensure:
+  thresholds:
+    - http.response_time.p95: 500
+    - http.response_time.p99: 1000
+    - http.codes.200: 95
+    - http.codes.4xx: 5
+    - http.codes.5xx: 1

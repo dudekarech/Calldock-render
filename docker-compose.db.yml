@@ -1,0 +1,71 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: calldocker-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: calldocker
+      POSTGRES_USER: calldocker_user
+      POSTGRES_PASSWORD: calldocker_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - calldocker-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U calldocker_user -d calldocker"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis for caching and sessions
+  redis:
+    image: redis:7-alpine
+    container_name: calldocker-redis
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - calldocker-network
+    command: redis-server --appendonly yes --requirepass redis_password
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # pgAdmin for database management (optional)
+  pgadmin:
+    image: dpage/pgadmin4:8.7
+    container_name: calldocker-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@calldocker.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5051:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - calldocker-network
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+networks:
+  calldocker-network:
+    driver: bridge

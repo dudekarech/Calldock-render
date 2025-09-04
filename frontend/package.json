@@ -1,0 +1,19 @@
+{
+  "name": "calldocker-webrtc-signaling",
+  "version": "1.0.0",
+  "description": "WebRTC signaling server for CallDocker",
+  "main": "webrtc-signaling-server.js",
+  "scripts": {
+    "start": "node webrtc-signaling-server.js",
+    "dev": "nodemon webrtc-signaling-server.js"
+  },
+  "dependencies": {
+    "ws": "^8.13.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  },
+  "keywords": ["webrtc", "signaling", "calldocker", "voip"],
+  "author": "CallDocker Team",
+  "license": "MIT"
+}

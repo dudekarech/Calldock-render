@@ -19,9 +19,20 @@ class DatabaseManager {
                 ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
                 max: 20, // Maximum number of clients in the pool
                 idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
-                connectionTimeoutMillis: 2000, // Return an error after 2 seconds if connection could not be established
+                connectionTimeoutMillis: 10000, // Increased timeout for Render
                 maxUses: 7500, // Close (and replace) a connection after it has been used 7500 times
             };
+
+            // Handle Render's DATABASE_URL if provided
+            if (process.env.DATABASE_URL) {
+                const url = require('url').parse(process.env.DATABASE_URL);
+                config.host = url.hostname;
+                config.port = url.port;
+                config.database = url.pathname.slice(1);
+                config.user = url.auth.split(':')[0];
+                config.password = url.auth.split(':')[1];
+                config.ssl = { rejectUnauthorized: false };
+            }
 
             this.pool = new Pool(config);
 

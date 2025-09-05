@@ -6,11 +6,16 @@ const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const session = require('express-session');
 const path = require('path');
+const http = require('http');
+const WebSocket = require('ws');
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || (process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost');
+
+// Create HTTP server for WebSocket integration
+const server = http.createServer(app);
 
 // Import database configuration
 const databaseManager = require('./database/config');
@@ -44,7 +49,7 @@ const authRoutes = require('./routes/auth');
                     scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.tailwindcss.com", "https://cdn.jsdelivr.net"],
                     scriptSrcAttr: ["'unsafe-inline'"],
                     imgSrc: ["'self'", "data:", "https:"],
-                    connectSrc: ["'self'", "ws:", "wss:", "http://localhost:8081", "wss://*.onrender.com", "https://*.onrender.com"],
+                    connectSrc: ["'self'", "ws:", "wss:", "http://localhost:3000", "wss://*.onrender.com", "https://*.onrender.com"],
                     mediaSrc: ["'self'", "blob:", "https:"],
                     fontSrc: ["'self'", "https://cdnjs.cloudflare.com", "https://fonts.gstatic.com", "https://fonts.googleapis.com"],
                 },
@@ -98,6 +103,10 @@ app.use('/css', (req, res, next) => {
     console.log(`📄 CSS Request: ${req.method} ${req.url}`);
     next();
 });
+
+// WebSocket Server Setup for Render compatibility
+const WebSocketServer = require('./websocket-server');
+let wsServer = null;
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -239,11 +248,15 @@ async function startServer() {
         const dbHealth = await databaseManager.healthCheck();
         console.log('📊 Database health:', dbHealth);
         
-        app.listen(PORT, HOST, () => {
+        // Initialize WebSocket server with the HTTP server
+        wsServer = new WebSocketServer(server);
+        
+        server.listen(PORT, HOST, () => {
             console.log(`🚀 Server running on http://${HOST}:${PORT}`);
             console.log(`📊 Health check: http://${HOST}:${PORT}/health`);
             console.log(`🔐 Admin dashboard: http://${HOST}:${PORT}/admin`);
             console.log(`📞 Agent dashboard: http://${HOST}:${PORT}/agent`);
+            console.log(`🔌 WebSocket endpoint: ws://${HOST}:${PORT}/ws`);
             console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
             console.log(`🗄️ Database: ${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME}`);
         });
@@ -256,12 +269,18 @@ async function startServer() {
 // Graceful shutdown
 process.on('SIGTERM', async () => {
     console.log('SIGTERM received, shutting down gracefully');
+    if (wsServer) {
+        wsServer.stop();
+    }
     await databaseManager.close();
     process.exit(0);
 });
 
 process.on('SIGINT', async () => {
     console.log('SIGINT received, shutting down gracefully');
+    if (wsServer) {
+        wsServer.stop();
+    }
     await databaseManager.close();
     process.exit(0);
 });

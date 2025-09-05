@@ -22,10 +22,17 @@ const url = require('url');
 const jwt = require('jsonwebtoken');
 
 class WebSocketServer {
-    constructor(port = 8081) {
+    constructor(httpServer = null, port = 8081) {
         this.port = port;
-        this.server = http.createServer();
-        this.wss = new WebSocket.Server({ server: this.server });
+        
+        // Use provided HTTP server or create new one
+        if (httpServer) {
+            this.server = httpServer;
+            this.wss = new WebSocket.Server({ server: this.server, path: '/ws' });
+        } else {
+            this.server = http.createServer();
+            this.wss = new WebSocket.Server({ server: this.server });
+        }
         
         // Store active connections
         this.connections = new Map(); // userId -> WebSocket
@@ -33,7 +40,11 @@ class WebSocketServer {
         this.userRooms = new Map(); // userId -> roomId
         
         this.setupWebSocket();
-        this.start();
+        
+        // Only start if we created our own server
+        if (!httpServer) {
+            this.start();
+        }
     }
     
     setupWebSocket() {
@@ -444,10 +455,16 @@ class WebSocketServer {
     }
     
     start() {
-        this.server.listen(this.port, () => {
-            console.log(`🚀 WebSocket server running on port ${this.port}`);
-            console.log(`📡 Ready for real-time WebRTC signaling`);
-        });
+        // Only start listening if we created our own server
+        if (this.server.listening === false) {
+            this.server.listen(this.port, () => {
+                console.log(`🚀 WebSocket server running on port ${this.port}`);
+                console.log(`📡 Ready for real-time WebRTC signaling`);
+            });
+        } else {
+            console.log(`🚀 WebSocket server attached to existing HTTP server`);
+            console.log(`📡 Ready for real-time WebRTC signaling on /ws path`);
+        }
     }
     
     stop() {

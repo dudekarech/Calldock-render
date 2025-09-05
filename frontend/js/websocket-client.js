@@ -26,8 +26,11 @@ class WebSocketClient {
             // Use production WebSocket URL if available, otherwise fallback to localhost
             const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
             const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsHost = isProduction ? window.location.hostname : 'localhost:8081';
-            const wsUrl = `${wsProtocol}//${wsHost}?token=${encodeURIComponent(this.token)}`;
+            
+            // For production (Render), use the same host and port as the main app with /ws path
+            // For development, use localhost:3000/ws (same port as main server)
+            const wsHost = isProduction ? window.location.host : 'localhost:3000';
+            const wsUrl = `${wsProtocol}//${wsHost}/ws?token=${encodeURIComponent(this.token)}`;
             console.log('🔌 Connecting to WebSocket server:', wsUrl);
             
             this.ws = new WebSocket(wsUrl);

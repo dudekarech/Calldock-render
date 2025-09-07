@@ -1,0 +1,47 @@
+# Spaceship-optimized Dockerfile for CallDocker
+# Based on Dockerfile.render but optimized for Spaceship deployment
+FROM node:18-alpine
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies for bcryptjs and other native modules
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ \
+    && ln -sf python3 /usr/bin/python
+
+# Copy package files first for better caching
+COPY package*.json ./
+
+# Install dependencies with production optimizations
+RUN npm ci --only=production && npm cache clean --force
+
+# Copy application code
+COPY . .
+
+# Create non-root user for security
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S calldocker -u 1001 -G nodejs
+
+# Set proper permissions
+RUN chown -R calldocker:nodejs /app && \
+    chmod -R 755 /app
+
+# Switch to non-root user
+USER calldocker
+
+# Expose the port (Spaceship uses 10000)
+EXPOSE 10000
+
+# Health check for Spaceship
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:10000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })" || exit 1
+
+# Set environment variables for Spaceship
+ENV NODE_ENV=production
+ENV PORT=10000
+
+# Start the application
+CMD ["node", "server.js"]

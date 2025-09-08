@@ -1233,6 +1233,14 @@ Critical Functions:
                         console.log('Received remote stream:', event.streams[0]);
                         remoteStream = event.streams[0];
                         
+                        // Check if stream has audio tracks
+                        const audioTracks = remoteStream.getAudioTracks();
+                        console.log('🔍 Remote stream audio tracks:', audioTracks.length);
+                        
+                        if (audioTracks.length > 0) {
+                            console.log('🔍 Audio track details:', audioTracks[0].label, audioTracks[0].enabled, audioTracks[0].muted);
+                        }
+                        
                         // Handle remote audio
                         const remoteAudio = document.createElement('audio');
                         remoteAudio.id = 'remoteAudio';
@@ -1242,11 +1250,18 @@ Critical Functions:
                         remoteAudio.muted = false; // Ensure not muted
                         remoteAudio.controls = false; // Hide controls
                         
+                        // Add event listeners for debugging
+                        remoteAudio.addEventListener('loadstart', () => console.log('🔍 Audio loadstart'));
+                        remoteAudio.addEventListener('loadeddata', () => console.log('🔍 Audio loadeddata'));
+                        remoteAudio.addEventListener('canplay', () => console.log('🔍 Audio canplay'));
+                        remoteAudio.addEventListener('playing', () => console.log('🔍 Audio playing'));
+                        remoteAudio.addEventListener('error', (e) => console.error('🔍 Audio error:', e));
+                        
                         // Force play to overcome autoplay restrictions
                         remoteAudio.play().then(() => {
-                            console.log('Remote audio playing successfully');
+                            console.log('✅ Remote audio playing successfully');
                         }).catch(e => {
-                            console.warn('Autoplay blocked, user must interact first:', e);
+                            console.warn('⚠️ Autoplay blocked, user must interact first:', e);
                             // Show user-friendly message with enable audio button
                             updateCallStatus('Audio Blocked', 'Click the button below to enable audio');
                             showEnableAudioButton();
@@ -1484,6 +1499,39 @@ Critical Functions:
                 }
             }
 
+            function tryEnableAudio() {
+                console.log('🔍 Attempting to enable audio proactively...');
+                const remoteAudio = document.getElementById('remoteAudio');
+                if (remoteAudio && remoteAudio.srcObject) {
+                    console.log('🔍 Found remote audio element, attempting to play...');
+                    remoteAudio.play().then(() => {
+                        console.log('✅ Audio enabled proactively');
+                    }).catch(e => {
+                        console.log('⚠️ Proactive audio enable failed (expected for autoplay restrictions):', e.message);
+                        // This is expected for autoplay restrictions, so we don't show error
+                    });
+                } else {
+                    console.log('⚠️ Remote audio element not ready yet');
+                }
+            }
+
+            function checkAudioStatus() {
+                console.log('🔍 Checking audio status...');
+                const remoteAudio = document.getElementById('remoteAudio');
+                if (remoteAudio && remoteAudio.srcObject) {
+                    // Check if audio is actually playing
+                    if (remoteAudio.paused) {
+                        console.log('⚠️ Audio is paused, showing enable button');
+                        updateCallStatus('Audio Blocked', 'Click the button below to enable audio');
+                        showEnableAudioButton();
+                    } else {
+                        console.log('✅ Audio is playing successfully');
+                    }
+                } else {
+                    console.log('⚠️ No remote audio element found');
+                }
+            }
+
             function showEnableAudioButton() {
                 const callProgress = document.getElementById('callProgress');
                 if (callProgress && callProgress.parentNode) {
@@ -1496,17 +1544,27 @@ Critical Functions:
                     enableAudioBtn.innerHTML = '<i class="fas fa-volume-up mr-2"></i>Enable Audio';
                     enableAudioBtn.className = 'px-4 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 mt-2';
                     enableAudioBtn.addEventListener('click', () => {
+                        console.log('🔍 Enable audio button clicked');
                         const remoteAudio = document.getElementById('remoteAudio');
                         if (remoteAudio) {
+                            console.log('🔍 Remote audio element found:', remoteAudio);
+                            console.log('🔍 Audio srcObject:', remoteAudio.srcObject);
+                            console.log('🔍 Audio muted:', remoteAudio.muted);
+                            console.log('🔍 Audio volume:', remoteAudio.volume);
+                            
+                            // Try to play the audio
                             remoteAudio.play().then(() => {
-                                console.log('Audio enabled successfully');
+                                console.log('✅ Audio enabled successfully');
                                 updateCallStatus('Connected!', 'Audio is now working!');
                                 enableAudioBtn.remove();
                                 showCallControls();
                             }).catch(e => {
-                                console.error('Failed to enable audio:', e);
+                                console.error('❌ Failed to enable audio:', e);
                                 updateCallStatus('Audio Error', 'Could not enable audio. Please check browser settings.');
                             });
+                        } else {
+                            console.error('❌ Remote audio element not found');
+                            updateCallStatus('Audio Error', 'Audio element not found. Please refresh and try again.');
                         }
                     });
                     
@@ -2012,6 +2070,16 @@ Critical Functions:
                         // Show floating widget when call connects
                         showFloatingWidget();
                         updateFloatingWidgetCallerName('Agent');
+                        
+                        // Try to enable audio proactively
+                        setTimeout(() => {
+                            tryEnableAudio();
+                        }, 1000);
+                        
+                        // Check if audio is working after a delay
+                        setTimeout(() => {
+                            checkAudioStatus();
+                        }, 3000);
                         
                         console.log('✅ Call connected successfully with agent');
                         

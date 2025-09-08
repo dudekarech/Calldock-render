@@ -1451,11 +1451,38 @@
 
                                                                                   // Local video will be set up in updateUIForActiveCall after the UI is created
                     
-                                         // Create WebRTC peer connection
+                                         // Create WebRTC peer connection with enhanced ICE servers for external connectivity
                     peerConnection = new RTCPeerConnection({
                         iceServers: [
-                            { urls: 'stun:stun.l.google.com:19302' }
-                        ]
+                            // Google STUN servers
+                            { urls: 'stun:stun.l.google.com:19302' },
+                            { urls: 'stun:stun1.l.google.com:19302' },
+                            { urls: 'stun:stun2.l.google.com:19302' },
+                            // Additional STUN servers for better connectivity
+                            { urls: 'stun:stun.cloudflare.com:3478' },
+                            { urls: 'stun:stun.voiparound.com' },
+                            { urls: 'stun:stun.voipbuster.com' },
+                            { urls: 'stun:stun.voipstunt.com' },
+                            { urls: 'stun:stun.counterpath.com' },
+                            { urls: 'stun:stun.1und1.de' },
+                            // TURN servers for NAT traversal (free public TURN servers)
+                            {
+                                urls: 'turn:openrelay.metered.ca:80',
+                                username: 'openrelayproject',
+                                credential: 'openrelayproject'
+                            },
+                            {
+                                urls: 'turn:openrelay.metered.ca:443',
+                                username: 'openrelayproject',
+                                credential: 'openrelayproject'
+                            },
+                            {
+                                urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+                                username: 'openrelayproject',
+                                credential: 'openrelayproject'
+                            }
+                        ],
+                        iceCandidatePoolSize: 10
                     });
                     console.log('WebRTC peer connection created');
 

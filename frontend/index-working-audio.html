@@ -1182,11 +1182,38 @@
                         }
                     }
 
-                    // Create WebRTC peer connection
+                    // Create WebRTC peer connection with enhanced ICE servers for external connectivity
                     peerConnection = new RTCPeerConnection({
                         iceServers: [
-                            { urls: 'stun:stun.l.google.com:19302' }
-                        ]
+                            // Google STUN servers
+                            { urls: 'stun:stun.l.google.com:19302' },
+                            { urls: 'stun:stun1.l.google.com:19302' },
+                            { urls: 'stun:stun2.l.google.com:19302' },
+                            // Additional STUN servers for better connectivity
+                            { urls: 'stun:stun.cloudflare.com:3478' },
+                            { urls: 'stun:stun.voiparound.com' },
+                            { urls: 'stun:stun.voipbuster.com' },
+                            { urls: 'stun:stun.voipstunt.com' },
+                            { urls: 'stun:stun.counterpath.com' },
+                            { urls: 'stun:stun.1und1.de' },
+                            // TURN servers for NAT traversal (free public TURN servers)
+                            {
+                                urls: 'turn:openrelay.metered.ca:80',
+                                username: 'openrelayproject',
+                                credential: 'openrelayproject'
+                            },
+                            {
+                                urls: 'turn:openrelay.metered.ca:443',
+                                username: 'openrelayproject',
+                                credential: 'openrelayproject'
+                            },
+                            {
+                                urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+                                username: 'openrelayproject',
+                                credential: 'openrelayproject'
+                            }
+                        ],
+                        iceCandidatePoolSize: 10
                     });
                     // Make peerConnection globally accessible
                     window.peerConnection = peerConnection;
@@ -1259,6 +1286,9 @@
                     peerConnection.onicecandidate = (event) => {
                         if (event.candidate) {
                             console.log('ICE candidate generated:', event.candidate);
+                            console.log('🔍 Candidate type:', event.candidate.type, 'protocol:', event.candidate.protocol, 'address:', event.candidate.address);
+                        } else {
+                            console.log('✅ ICE gathering complete - no more candidates');
                         }
                     };
 
@@ -1288,6 +1318,22 @@
                     // Enhanced ICE connection monitoring
                     peerConnection.oniceconnectionstatechange = (event) => {
                         console.log('ICE connection state:', peerConnection.iceConnectionState);
+                        
+                        // Handle ICE connection state changes
+                        if (peerConnection.iceConnectionState === 'connected' || peerConnection.iceConnectionState === 'completed') {
+                            console.log('✅ ICE connection established successfully!');
+                            // Ensure call state is set if not already set
+                            if (!isInCall) {
+                                isInCall = true;
+                                showCallControls();
+                                startCallTimer();
+                                showFloatingWidget();
+                                updateFloatingWidgetCallerName('Agent');
+                            }
+                        } else if (peerConnection.iceConnectionState === 'failed' || peerConnection.iceConnectionState === 'disconnected') {
+                            console.log('❌ ICE connection failed or disconnected');
+                            // Don't immediately set isInCall to false here as the connection state change handler will handle it
+                        }
                         if (peerConnection.iceConnectionState === 'connected') {
                             console.log('ICE connection established - media should flow!');
                         } else if (peerConnection.iceConnectionState === 'failed') {
@@ -1926,14 +1972,32 @@
                         await window.peerConnection.setRemoteDescription(answer);
                         console.log('✅ Agent answer set as remote description');
                         
+                        // Flush any queued ICE candidates now that remote description is set
+                        flushQueuedRemoteCandidates();
+                        
+                        // Mark answer as applied to prevent duplicate processing
+                        answerApplied = true;
+                        
                         // Stop checking for agent answer since we got it
                         if (window.answerCheckInterval) {
                             clearInterval(window.answerCheckInterval);
                             window.answerCheckInterval = null;
                         }
                         
+                        // Set call state to connected
+                        isInCall = true;
+                        
                         // Update call status to connected
                         updateCallStatus('Call Connected', 'Connected with agent');
+                        
+                        // Show call controls and start call timer
+                        showCallControls();
+                        startCallTimer();
+                        
+                        // Show floating widget when call connects
+                        showFloatingWidget();
+                        updateFloatingWidgetCallerName('Agent');
+                        
                         console.log('✅ Call connected successfully with agent');
                         
                     } catch (error) {

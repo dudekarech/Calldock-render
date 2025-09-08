@@ -1211,6 +1211,22 @@
                                 urls: 'turn:openrelay.metered.ca:443?transport=tcp',
                                 username: 'openrelayproject',
                                 credential: 'openrelayproject'
+                            },
+                            // Additional TURN servers for better connectivity
+                            {
+                                urls: 'turn:relay.metered.ca:80',
+                                username: 'openrelayproject',
+                                credential: 'openrelayproject'
+                            },
+                            {
+                                urls: 'turn:relay.metered.ca:443',
+                                username: 'openrelayproject',
+                                credential: 'openrelayproject'
+                            },
+                            {
+                                urls: 'turn:relay.metered.ca:443?transport=tcp',
+                                username: 'openrelayproject',
+                                credential: 'openrelayproject'
                             }
                         ],
                         iceCandidatePoolSize: 10
@@ -1302,6 +1318,18 @@
                         if (event.candidate) {
                             console.log('ICE candidate generated:', event.candidate);
                             console.log('🔍 Candidate type:', event.candidate.type, 'protocol:', event.candidate.protocol, 'address:', event.candidate.address);
+                            
+                            // Log candidate priority for debugging
+                            console.log('🔍 Candidate priority:', event.candidate.priority);
+                            
+                            // Check if this is a TURN candidate (relay)
+                            if (event.candidate.type === 'relay') {
+                                console.log('✅ TURN candidate generated - NAT traversal should work');
+                            } else if (event.candidate.type === 'srflx') {
+                                console.log('✅ STUN candidate generated - public IP discovered');
+                            } else if (event.candidate.type === 'host') {
+                                console.log('🔍 Host candidate generated - local network');
+                            }
                         } else {
                             console.log('✅ ICE gathering complete - no more candidates');
                         }
@@ -1326,7 +1354,36 @@
                             }
                         } else if (peerConnection.connectionState === 'failed' || peerConnection.connectionState === 'disconnected') {
                             console.log('WebRTC connection failed or disconnected');
-                            isInCall = false;
+                            console.log('🔍 Connection failed - attempting recovery...');
+                            
+                            // Don't immediately disconnect - try to recover
+                            if (isInCall) {
+                                console.log('🔍 Call was active, attempting connection recovery...');
+                                updateCallStatus('Connection Issue', 'Attempting to reconnect...');
+                                
+                                // Try to restart ICE gathering
+                                setTimeout(() => {
+                                    if (peerConnection && peerConnection.connectionState === 'failed') {
+                                        console.log('🔍 Attempting ICE restart...');
+                                        try {
+                                            peerConnection.restartIce();
+                                        } catch (e) {
+                                            console.log('🔍 ICE restart failed:', e);
+                                        }
+                                    }
+                                }, 2000);
+                                
+                                // Only disconnect after a delay if still failed
+                                setTimeout(() => {
+                                    if (peerConnection && (peerConnection.connectionState === 'failed' || peerConnection.connectionState === 'disconnected')) {
+                                        console.log('🔍 Connection recovery failed, disconnecting call');
+                                        isInCall = false;
+                                        updateCallStatus('Call Failed', 'Connection lost');
+                                    }
+                                }, 10000); // Wait 10 seconds before giving up
+                            } else {
+                                isInCall = false;
+                            }
                         }
                     };
 

@@ -977,63 +977,26 @@ Critical Functions:
                 return [
                     // STUN servers
                     {
-                        urls: "stun:stun.relay.metered.ca:80",
-                    },
-                    {
                         urls: "stun:stun.l.google.com:19302",
                     },
                     {
                         urls: "stun:stun1.l.google.com:19302",
                     },
-                    
-                    // TURN servers with proper credentials and multiple protocols
                     {
-                        urls: "turn:global.relay.metered.ca:80",
-                        username: "4a605c708b7903d308093c7b",
-                        credential: "2JRxRSrJrBBycVy6",
+                        urls: "stun:stun2.l.google.com:19302",
                     },
                     {
-                        urls: "turn:global.relay.metered.ca:80?transport=tcp",
-                        username: "4a605c708b7903d308093c7b",
-                        credential: "2JRxRSrJrBBycVy6",
+                        urls: "stun:stun3.l.google.com:19302",
                     },
                     {
-                        urls: "turn:global.relay.metered.ca:443",
-                        username: "4a605c708b7903d308093c7b",
-                        credential: "2JRxRSrJrBBycVy6",
+                        urls: "stun:stun4.l.google.com:19302",
                     },
                     {
-                        urls: "turn:global.relay.metered.ca:443?transport=tcp",
-                        username: "4a605c708b7903d308093c7b",
-                        credential: "2JRxRSrJrBBycVy6",
-                    },
-                    {
-                        urls: "turns:global.relay.metered.ca:443",
-                        username: "4a605c708b7903d308093c7b",
-                        credential: "2JRxRSrJrBBycVy6",
-                    },
-                    {
-                        urls: "turns:global.relay.metered.ca:443?transport=tcp",
-                        username: "4a605c708b7903d308093c7b",
-                        credential: "2JRxRSrJrBBycVy6",
+                        urls: "stun:stun.cloudflare.com:3478",
                     },
                     
-                    // Additional Metered.ca TURN servers for redundancy
-                    {
-                        urls: "turn:relay.metered.ca:80",
-                        username: "4a605c708b7903d308093c7b",
-                        credential: "2JRxRSrJrBBycVy6",
-                    },
-                    {
-                        urls: "turn:relay.metered.ca:443",
-                        username: "4a605c708b7903d308093c7b",
-                        credential: "2JRxRSrJrBBycVy6",
-                    },
-                    {
-                        urls: "turn:relay.metered.ca:443?transport=tcp",
-                        username: "4a605c708b7903d308093c7b",
-                        credential: "2JRxRSrJrBBycVy6",
-                    }
+                    // Use only the API-provided TURN servers (they're working)
+                    // Don't use static credentials as they might be expired
                 ];
             }
 
@@ -1761,11 +1724,11 @@ Critical Functions:
                             }
                         } else if (peerConnection.connectionState === 'failed' || peerConnection.connectionState === 'disconnected') {
                             console.log('WebRTC connection failed or disconnected');
-                            console.log('🔍 Connection failed - attempting recovery...');
                             
-                            // Don't immediately disconnect - try to recover
-                            if (isInCall) {
-                                console.log('🔍 Call was active, attempting connection recovery...');
+                            // Only attempt recovery once to prevent loops
+                            if (isInCall && !peerConnection.recoveryAttempted) {
+                                peerConnection.recoveryAttempted = true;
+                                console.log('🔍 Connection failed - attempting recovery...');
                                 updateCallStatus('Connection Issue', 'Attempting to reconnect...');
                                 
                                 // Try to restart ICE gathering
@@ -1909,6 +1872,11 @@ Critical Functions:
                     // Create offer
                     const offer = await peerConnection.createOffer();
                     await peerConnection.setLocalDescription(offer);
+                    
+                    // Debug SDP for codec information
+                    console.log('🔍 SDP Offer details:');
+                    console.log('🔍 Audio codecs in offer:', offer.sdp.match(/m=audio.*\r\n/g));
+                    console.log('🔍 RTP map lines:', offer.sdp.match(/a=rtpmap:.*\r\n/g));
 
                     // Generate unique call ID using crypto.randomUUID() for better uniqueness
                     callId = 'call_' + crypto.randomUUID();
@@ -2586,6 +2554,11 @@ Critical Functions:
                         const answer = new RTCSessionDescription(message.answer);
                         await window.peerConnection.setRemoteDescription(answer);
                         console.log('✅ Agent answer set as remote description');
+                        
+                        // Debug SDP for codec information
+                        console.log('🔍 SDP Answer details:');
+                        console.log('🔍 Audio codecs in answer:', answer.sdp.match(/m=audio.*\r\n/g));
+                        console.log('🔍 RTP map lines in answer:', answer.sdp.match(/a=rtpmap:.*\r\n/g));
                         
                         // Flush any queued ICE candidates now that remote description is set
                         flushQueuedRemoteCandidates();

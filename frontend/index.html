@@ -948,12 +948,58 @@ Critical Functions:
                 return turnServerHealthCache;
             }
 
-            // Function to get optimized ICE servers based on health check
+            // Function to fetch Metered.ca TURN server credentials via API
+            async function fetchMeteredTurnCredentials() {
+                try {
+                    console.log('🔍 Fetching Metered.ca TURN server credentials...');
+                    const response = await fetch('https://calldocker.metered.live/api/v1/turn/credentials?apiKey=fb4ffbb6046b00332d0bbc9f3b291bdf8e70');
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const credentials = await response.json();
+                    console.log('✅ Metered.ca TURN credentials fetched successfully:', credentials);
+                    return credentials;
+                } catch (error) {
+                    console.warn('⚠️ Failed to fetch Metered.ca credentials:', error.message);
+                    return null;
+                }
+            }
+
+            // Function to get Metered.ca static TURN servers as fallback
+            function getMeteredStaticServers() {
+                return [
+                    {
+                        urls: "stun:stun.relay.metered.ca:80",
+                    },
+                    {
+                        urls: "turn:global.relay.metered.ca:80",
+                        username: "4a605c708b7903d308093c7b",
+                        credential: "2JRxRSrJrBBycVy6",
+                    },
+                    {
+                        urls: "turn:global.relay.metered.ca:80?transport=tcp",
+                        username: "4a605c708b7903d308093c7b",
+                        credential: "2JRxRSrJrBBycVy6",
+                    },
+                    {
+                        urls: "turn:global.relay.metered.ca:443",
+                        username: "4a605c708b7903d308093c7b",
+                        credential: "2JRxRSrJrBBycVy6",
+                    },
+                    {
+                        urls: "turns:global.relay.metered.ca:443?transport=tcp",
+                        username: "4a605c708b7903d308093c7b",
+                        credential: "2JRxRSrJrBBycVy6",
+                    }
+                ];
+            }
+
+            // Function to get optimized ICE servers with Metered.ca priority
             async function getOptimizedIceServers() {
-                const healthResults = await testAllTurnServers();
-                
                 const iceServers = [
-                    // Always include STUN servers first
+                    // Always include reliable STUN servers first
                     { urls: 'stun:stun.l.google.com:19302' },
                     { urls: 'stun:stun1.l.google.com:19302' },
                     { urls: 'stun:stun2.l.google.com:19302' },
@@ -962,28 +1008,73 @@ Critical Functions:
                     { urls: 'stun:stun.cloudflare.com:3478' }
                 ];
 
-                // Add working TURN servers (prioritized by reliability)
-                healthResults.workingServers.forEach(server => {
-                    iceServers.push(server.server);
-                });
+                // Try to get Metered.ca API credentials first (most reliable)
+                const meteredCredentials = await fetchMeteredTurnCredentials();
+                if (meteredCredentials && meteredCredentials.length > 0) {
+                    console.log('✅ Using Metered.ca API TURN servers');
+                    iceServers.push(...meteredCredentials);
+                } else {
+                    console.log('⚠️ Metered.ca API failed, using static servers');
+                    // Fallback to Metered.ca static servers
+                    iceServers.push(...getMeteredStaticServers());
+                }
 
+                // Add other working TURN servers as additional fallbacks
+                try {
+                    const healthResults = await testAllTurnServers();
+                    healthResults.workingServers.forEach(server => {
+                        // Only add if not already included from Metered.ca
+                        const alreadyIncluded = iceServers.some(existing => 
+                            existing.urls === server.server.urls
+                        );
+                        if (!alreadyIncluded) {
+                            iceServers.push(server.server);
+                        }
+                    });
+                } catch (error) {
+                    console.warn('⚠️ Health check failed, using Metered.ca servers only:', error.message);
+                }
+
+                console.log('🔍 Final ICE servers configuration:', iceServers.length, 'servers');
                 return iceServers;
             }
 
-            // Function to test TURN server connectivity with multiple servers
+            // Function to test TURN server connectivity with Metered.ca priority
             async function testTurnServerConnectivity() {
                 console.log('🔍 Testing TURN server connectivity...');
                 
+                // Test Metered.ca API first
+                const meteredCredentials = await fetchMeteredTurnCredentials();
+                let meteredWorking = false;
+                let meteredServers = [];
+                
+                if (meteredCredentials && meteredCredentials.length > 0) {
+                    console.log('✅ Metered.ca API credentials available');
+                    meteredWorking = true;
+                    meteredServers = meteredCredentials.map(s => s.urls);
+                } else {
+                    console.log('⚠️ Metered.ca API failed, testing static servers');
+                    // Test static Metered.ca servers
+                    const staticServers = getMeteredStaticServers();
+                    meteredServers = staticServers.map(s => s.urls);
+                }
+                
+                // Test other TURN servers as additional fallbacks
                 const healthResults = await testAllTurnServers();
                 
+                const allWorkingServers = [...meteredServers, ...healthResults.workingServers.map(s => s.server.urls)];
+                const uniqueWorkingServers = [...new Set(allWorkingServers)]; // Remove duplicates
+                
                 return {
-                    hasTurnCandidate: healthResults.workingServers.length > 0,
+                    hasTurnCandidate: meteredWorking || healthResults.workingServers.length > 0,
                     hasStunCandidate: true, // STUN servers are generally reliable
-                    turnServersWorking: healthResults.workingServers.map(s => s.server.urls),
+                    turnServersWorking: uniqueWorkingServers,
                     stunServersWorking: ['stun.l.google.com:19302', 'stun1.l.google.com:19302'],
-                    workingCount: healthResults.workingServers.length,
+                    workingCount: uniqueWorkingServers.length,
                     failedCount: healthResults.failedServers.length,
-                    totalCount: healthResults.workingServers.length + healthResults.failedServers.length
+                    totalCount: uniqueWorkingServers.length + healthResults.failedServers.length,
+                    meteredWorking: meteredWorking,
+                    meteredServers: meteredServers
                 };
             }
             
@@ -1165,12 +1256,13 @@ Critical Functions:
                     
                     if (result.hasTurnCandidate) {
                         const turnServers = result.turnServersWorking.join(', ');
-                        alert(`✅ Connection test successful!\n\nTURN servers are working properly:\n${turnServers}\n\nYour calls should work across different networks.`);
+                        const meteredStatus = result.meteredWorking ? '✅ Metered.ca API working' : '⚠️ Using Metered.ca static servers';
+                        alert(`✅ Connection test successful!\n\n${meteredStatus}\n\nTURN servers are working properly:\n${turnServers}\n\nYour calls should work across different networks.`);
                     } else if (result.hasStunCandidate) {
                         const stunServers = result.stunServersWorking.join(', ');
-                        alert(`⚠️ Partial connection test results:\n\nSTUN servers are working: ${stunServers}\n\nBut TURN servers are not accessible.\nCalls may work on the same network but may fail across different networks.\n\nThis could be due to:\n- Firewall blocking TURN server ports\n- Network restrictions\n- TURN server downtime`);
+                        alert(`⚠️ Partial connection test results:\n\nSTUN servers are working: ${stunServers}\n\nBut TURN servers are not accessible.\nCalls may work on the same network but may fail across different networks.\n\nThis could be due to:\n- Firewall blocking TURN server ports\n- Network restrictions\n- TURN server downtime\n- Metered.ca API issues`);
                     } else {
-                        alert('❌ Connection test failed!\n\nNeither STUN nor TURN servers are accessible.\nThis may be due to:\n- Network restrictions or firewall settings\n- Internet connectivity issues\n- All servers being down\n\nPlease check your network connection and try again.');
+                        alert('❌ Connection test failed!\n\nNeither STUN nor TURN servers are accessible.\nThis may be due to:\n- Network restrictions or firewall settings\n- Internet connectivity issues\n- All servers being down\n- Metered.ca API unavailable\n\nPlease check your network connection and try again.');
                     }
                 } catch (error) {
                     console.error('Connection test error:', error);

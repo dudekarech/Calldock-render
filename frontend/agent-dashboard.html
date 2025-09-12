@@ -613,92 +613,43 @@ Critical Functions:
                     });
                     console.log('✅ Agent media access granted');
                     
-                    // Create WebRTC peer connection with enhanced ICE servers for external connectivity
+                    // Create WebRTC peer connection with Metered.ca TURN servers
                     peerConnection = new RTCPeerConnection({
                         iceServers: [
-                            // Google STUN servers (most reliable)
+                            // Reliable STUN servers
                             { urls: 'stun:stun.l.google.com:19302' },
                             { urls: 'stun:stun1.l.google.com:19302' },
                             { urls: 'stun:stun2.l.google.com:19302' },
                             { urls: 'stun:stun3.l.google.com:19302' },
                             { urls: 'stun:stun4.l.google.com:19302' },
-                            
-                            // Cloudflare STUN servers
                             { urls: 'stun:stun.cloudflare.com:3478' },
                             
-                            // Additional reliable STUN servers
-                            { urls: 'stun:stun.voiparound.com' },
-                            { urls: 'stun:stun.voipbuster.com' },
-                            { urls: 'stun:stun.voipstunt.com' },
-                            { urls: 'stun:stun.counterpath.com' },
-                            { urls: 'stun:stun.1und1.de' },
-                            
-                            // Reliable TURN servers for NAT traversal
+                            // Metered.ca TURN servers (most reliable)
                             {
-                                urls: 'turn:openrelay.metered.ca:80',
-                                username: 'openrelayproject',
-                                credential: 'openrelayproject'
+                                urls: "stun:stun.relay.metered.ca:80",
                             },
                             {
-                                urls: 'turn:openrelay.metered.ca:443',
-                                username: 'openrelayproject',
-                                credential: 'openrelayproject'
+                                urls: "turn:global.relay.metered.ca:80",
+                                username: "4a605c708b7903d308093c7b",
+                                credential: "2JRxRSrJrBBycVy6",
                             },
                             {
-                                urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-                                username: 'openrelayproject',
-                                credential: 'openrelayproject'
-                            },
-                            // Alternative TURN servers
-                            {
-                                urls: 'turn:freeturn.tel:3478',
-                                username: 'free',
-                                credential: 'free'
+                                urls: "turn:global.relay.metered.ca:80?transport=tcp",
+                                username: "4a605c708b7903d308093c7b",
+                                credential: "2JRxRSrJrBBycVy6",
                             },
                             {
-                                urls: 'turn:freeturn.tel:3478?transport=tcp',
-                                username: 'free',
-                                credential: 'free'
-                            },
-                            // Additional reliable TURN servers
-                            {
-                                urls: 'turn:relay.metered.ca:80',
-                                username: 'openrelayproject',
-                                credential: 'openrelayproject'
+                                urls: "turn:global.relay.metered.ca:443",
+                                username: "4a605c708b7903d308093c7b",
+                                credential: "2JRxRSrJrBBycVy6",
                             },
                             {
-                                urls: 'turn:relay.metered.ca:443',
-                                username: 'openrelayproject',
-                                credential: 'openrelayproject'
-                            },
-                            {
-                                urls: 'turn:relay.metered.ca:443?transport=tcp',
-                                username: 'openrelayproject',
-                                credential: 'openrelayproject'
-                            },
-                            // More TURN server options
-                            {
-                                urls: 'turn:turn.bistri.com:80',
-                                username: 'homeo',
-                                credential: 'homeo'
-                            },
-                            {
-                                urls: 'turn:turn.bistri.com:443',
-                                username: 'homeo',
-                                credential: 'homeo'
-                            },
-                            {
-                                urls: 'turn:turn.anyfirewall.com:80',
-                                username: 'webrtc',
-                                credential: 'webrtc'
-                            },
-                            {
-                                urls: 'turn:turn.anyfirewall.com:443',
-                                username: 'webrtc',
-                                credential: 'webrtc'
+                                urls: "turns:global.relay.metered.ca:443?transport=tcp",
+                                username: "4a605c708b7903d308093c7b",
+                                credential: "2JRxRSrJrBBycVy6",
                             }
                         ],
-                        iceCandidatePoolSize: 20,
+                        iceCandidatePoolSize: 30,
                         iceTransportPolicy: 'all',
                         bundlePolicy: 'max-bundle',
                         rtcpMuxPolicy: 'require'

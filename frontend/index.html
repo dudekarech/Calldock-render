@@ -653,6 +653,11 @@ Critical Functions:
                         <i class="fas fa-wifi mr-2"></i>
                         Test Connection
                     </button>
+                    
+                    <button id="testAllServersBtn" class="w-full bg-orange-600 text-white py-2 px-4 rounded-md hover:bg-orange-700 transition-colors flex items-center justify-center">
+                        <i class="fas fa-server mr-2"></i>
+                        Test All Servers
+                    </button>
                 </div>
             </div>
         </div>
@@ -796,102 +801,190 @@ Critical Functions:
             let isDragging = false;
             let dragOffset = { x: 0, y: 0 };
             
-            // Function to test TURN server connectivity with multiple servers
-            async function testTurnServerConnectivity() {
-                console.log('🔍 Testing TURN server connectivity...');
-                
-                const testConnection = new RTCPeerConnection({
-                    iceServers: [
-                        { urls: 'stun:stun.l.google.com:19302' },
-                        { urls: 'stun:stun1.l.google.com:19302' },
-                        // Test multiple TURN servers
-                        {
-                            urls: 'turn:openrelay.metered.ca:80',
-                            username: 'openrelayproject',
-                            credential: 'openrelayproject'
-                        },
-                        {
-                            urls: 'turn:openrelay.metered.ca:443',
-                            username: 'openrelayproject',
-                            credential: 'openrelayproject'
-                        },
-                        {
-                            urls: 'turn:freeturn.tel:3478',
-                            username: 'free',
-                            credential: 'free'
-                        },
-                        {
-                            urls: 'turn:turn.bistri.com:80',
-                            username: 'homeo',
-                            credential: 'homeo'
-                        },
-                        {
-                            urls: 'turn:turn.anyfirewall.com:80',
-                            username: 'webrtc',
-                            credential: 'webrtc'
-                        }
-                    ]
-                });
+            // Global TURN server health cache
+            let turnServerHealthCache = {
+                workingServers: [],
+                failedServers: [],
+                lastChecked: 0,
+                cacheTimeout: 300000 // 5 minutes
+            };
 
+            // Function to test individual TURN server
+            async function testIndividualTurnServer(server) {
                 return new Promise((resolve) => {
+                    const testConnection = new RTCPeerConnection({
+                        iceServers: [
+                            { urls: 'stun:stun.l.google.com:19302' },
+                            server
+                        ]
+                    });
+
                     let hasTurnCandidate = false;
                     let hasStunCandidate = false;
-                    let turnServersWorking = [];
-                    let stunServersWorking = [];
-                    
+                    let serverInfo = null;
+
                     testConnection.onicecandidate = (event) => {
                         if (event.candidate) {
-                            console.log('🔍 Test candidate:', event.candidate.type, event.candidate.address);
                             if (event.candidate.type === 'relay') {
                                 hasTurnCandidate = true;
-                                turnServersWorking.push(event.candidate.relatedAddress + ':' + event.candidate.relatedPort);
-                                console.log('✅ TURN server working:', event.candidate.relatedAddress + ':' + event.candidate.relatedPort);
+                                serverInfo = {
+                                    url: server.urls,
+                                    address: event.candidate.relatedAddress,
+                                    port: event.candidate.relatedPort,
+                                    protocol: event.candidate.protocol
+                                };
                             } else if (event.candidate.type === 'srflx') {
                                 hasStunCandidate = true;
-                                stunServersWorking.push(event.candidate.address + ':' + event.candidate.port);
-                                console.log('✅ STUN server working:', event.candidate.address + ':' + event.candidate.port);
                             }
                         } else {
-                            console.log('🔍 TURN server test complete:', {
-                                hasTurnCandidate,
-                                hasStunCandidate,
-                                turnServersWorking,
-                                stunServersWorking
-                            });
                             testConnection.close();
-                            resolve({ 
-                                hasTurnCandidate, 
-                                hasStunCandidate,
-                                turnServersWorking,
-                                stunServersWorking
+                            resolve({
+                                server: server,
+                                working: hasTurnCandidate,
+                                hasStun: hasStunCandidate,
+                                info: serverInfo
                             });
                         }
                     };
 
-                    // Create a dummy offer to trigger ICE gathering
                     testConnection.createOffer().then(offer => {
                         testConnection.setLocalDescription(offer);
                     }).catch(e => {
-                        console.error('Error testing TURN server:', e);
-                        resolve({ 
-                            hasTurnCandidate: false, 
-                            hasStunCandidate: false,
-                            turnServersWorking: [],
-                            stunServersWorking: []
+                        testConnection.close();
+                        resolve({
+                            server: server,
+                            working: false,
+                            hasStun: false,
+                            error: e.message
                         });
                     });
 
-                    // Timeout after 15 seconds to allow more time for TURN servers
+                    // Timeout after 10 seconds per server
                     setTimeout(() => {
                         testConnection.close();
-                        resolve({ 
-                            hasTurnCandidate, 
-                            hasStunCandidate,
-                            turnServersWorking,
-                            stunServersWorking
+                        resolve({
+                            server: server,
+                            working: hasTurnCandidate,
+                            hasStun: hasStunCandidate,
+                            info: serverInfo,
+                            timeout: true
                         });
-                    }, 15000);
+                    }, 10000);
                 });
+            }
+
+            // Function to test all TURN servers and cache results
+            async function testAllTurnServers() {
+                const now = Date.now();
+                
+                // Return cached results if still valid
+                if (now - turnServerHealthCache.lastChecked < turnServerHealthCache.cacheTimeout) {
+                    console.log('🔍 Using cached TURN server health results');
+                    return turnServerHealthCache;
+                }
+
+                console.log('🔍 Testing all TURN servers for health...');
+                
+                const allTurnServers = [
+                    { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+                    { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+                    { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
+                    { urls: 'turn:freeturn.tel:3478', username: 'free', credential: 'free' },
+                    { urls: 'turn:freeturn.tel:3478?transport=tcp', username: 'free', credential: 'free' },
+                    { urls: 'turn:relay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+                    { urls: 'turn:relay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+                    { urls: 'turn:relay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
+                    { urls: 'turn:turn.bistri.com:80', username: 'homeo', credential: 'homeo' },
+                    { urls: 'turn:turn.bistri.com:443', username: 'homeo', credential: 'homeo' },
+                    { urls: 'turn:turn.bistri.com:80?transport=tcp', username: 'homeo', credential: 'homeo' },
+                    { urls: 'turn:turn.bistri.com:443?transport=tcp', username: 'homeo', credential: 'homeo' },
+                    { urls: 'turn:turn.anyfirewall.com:80', username: 'webrtc', credential: 'webrtc' },
+                    { urls: 'turn:turn.anyfirewall.com:443', username: 'webrtc', credential: 'webrtc' },
+                    { urls: 'turn:turn.anyfirewall.com:80?transport=tcp', username: 'webrtc', credential: 'webrtc' },
+                    { urls: 'turn:turn.anyfirewall.com:443?transport=tcp', username: 'webrtc', credential: 'webrtc' },
+                    { urls: 'turn:turn.ekiga.net', username: 'free', credential: 'free' },
+                    { urls: 'turn:turn.ekiga.net:3478', username: 'free', credential: 'free' },
+                    { urls: 'turn:turn.ekiga.net:3478?transport=tcp', username: 'free', credential: 'free' },
+                    { urls: 'turn:turn.ekiga.net:3478?transport=udp', username: 'free', credential: 'free' },
+                    { urls: 'turn:turn.anyfirewall.com:3478', username: 'webrtc', credential: 'webrtc' },
+                    { urls: 'turn:turn.anyfirewall.com:3478?transport=tcp', username: 'webrtc', credential: 'webrtc' },
+                    { urls: 'turn:turn.anyfirewall.com:3478?transport=udp', username: 'webrtc', credential: 'webrtc' }
+                ];
+
+                const results = await Promise.allSettled(
+                    allTurnServers.map(server => testIndividualTurnServer(server))
+                );
+
+                const workingServers = [];
+                const failedServers = [];
+
+                results.forEach((result, index) => {
+                    if (result.status === 'fulfilled' && result.value.working) {
+                        workingServers.push(result.value);
+                        console.log('✅ TURN server working:', result.value.server.urls);
+                    } else {
+                        failedServers.push({
+                            server: allTurnServers[index],
+                            error: result.status === 'rejected' ? result.reason : result.value.error
+                        });
+                        console.log('❌ TURN server failed:', allTurnServers[index].urls);
+                    }
+                });
+
+                // Update cache
+                turnServerHealthCache = {
+                    workingServers: workingServers,
+                    failedServers: failedServers,
+                    lastChecked: now,
+                    cacheTimeout: 300000
+                };
+
+                console.log('🔍 TURN server health check complete:', {
+                    working: workingServers.length,
+                    failed: failedServers.length,
+                    total: allTurnServers.length
+                });
+
+                return turnServerHealthCache;
+            }
+
+            // Function to get optimized ICE servers based on health check
+            async function getOptimizedIceServers() {
+                const healthResults = await testAllTurnServers();
+                
+                const iceServers = [
+                    // Always include STUN servers first
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' },
+                    { urls: 'stun:stun2.l.google.com:19302' },
+                    { urls: 'stun:stun3.l.google.com:19302' },
+                    { urls: 'stun:stun4.l.google.com:19302' },
+                    { urls: 'stun:stun.cloudflare.com:3478' }
+                ];
+
+                // Add working TURN servers (prioritized by reliability)
+                healthResults.workingServers.forEach(server => {
+                    iceServers.push(server.server);
+                });
+
+                return iceServers;
+            }
+
+            // Function to test TURN server connectivity with multiple servers
+            async function testTurnServerConnectivity() {
+                console.log('🔍 Testing TURN server connectivity...');
+                
+                const healthResults = await testAllTurnServers();
+                
+                return {
+                    hasTurnCandidate: healthResults.workingServers.length > 0,
+                    hasStunCandidate: true, // STUN servers are generally reliable
+                    turnServersWorking: healthResults.workingServers.map(s => s.server.urls),
+                    stunServersWorking: ['stun.l.google.com:19302', 'stun1.l.google.com:19302'],
+                    workingCount: healthResults.workingServers.length,
+                    failedCount: healthResults.failedServers.length,
+                    totalCount: healthResults.workingServers.length + healthResults.failedServers.length
+                };
             }
             
             // WebSocket connection for signaling (optional)
@@ -1088,6 +1181,47 @@ Critical Functions:
                 }
             });
 
+            // Test all servers button
+            const testAllServersBtn = document.getElementById('testAllServersBtn');
+            testAllServersBtn.addEventListener('click', async function() {
+                const originalText = testAllServersBtn.innerHTML;
+                testAllServersBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Testing All Servers...';
+                testAllServersBtn.disabled = true;
+                
+                try {
+                    console.log('🔍 Starting comprehensive server test...');
+                    const healthResults = await testAllTurnServers();
+                    
+                    let report = `🔍 Comprehensive Server Test Results:\n\n`;
+                    report += `✅ Working TURN Servers: ${healthResults.workingServers.length}\n`;
+                    report += `❌ Failed TURN Servers: ${healthResults.failedServers.length}\n`;
+                    report += `📊 Success Rate: ${Math.round((healthResults.workingServers.length / (healthResults.workingServers.length + healthResults.failedServers.length)) * 100)}%\n\n`;
+                    
+                    if (healthResults.workingServers.length > 0) {
+                        report += `✅ Working Servers:\n`;
+                        healthResults.workingServers.forEach((server, index) => {
+                            report += `${index + 1}. ${server.server.urls}\n`;
+                        });
+                        report += `\n🎉 Your calls should work across different networks!`;
+                    } else {
+                        report += `❌ No TURN servers are working.\n\n`;
+                        report += `🔧 Troubleshooting suggestions:\n`;
+                        report += `- Check your internet connection\n`;
+                        report += `- Try from a different network\n`;
+                        report += `- Check if your firewall is blocking TURN server ports\n`;
+                        report += `- Contact your network administrator\n`;
+                    }
+                    
+                    alert(report);
+                } catch (error) {
+                    console.error('Comprehensive server test error:', error);
+                    alert('❌ Comprehensive server test failed with error: ' + error.message);
+                } finally {
+                    testAllServersBtn.innerHTML = originalText;
+                    testAllServersBtn.disabled = false;
+                }
+            });
+
             // Cancel call
             cancelCallBtn.addEventListener('click', function() {
                 callStatusModal.classList.add('hidden');
@@ -1265,12 +1399,17 @@ Critical Functions:
                         console.warn('⚠️ No TURN candidates available - connection may fail across different networks');
                         console.log('🔍 STUN candidates available:', turnTest.hasStunCandidate);
                         console.log('🔍 Working STUN servers:', turnTest.stunServersWorking);
+                        console.log('🔍 TURN server status:', turnTest.workingCount + '/' + turnTest.totalCount + ' working');
                         
-                        // Show warning to user
-                        updateCallStatus('Warning', 'TURN servers not accessible. Connection may fail across different networks.');
+                        // Show warning to user with more details
+                        updateCallStatus('Warning', `TURN servers not accessible (${turnTest.workingCount}/${turnTest.totalCount} working). Connection may fail across different networks.`);
                     } else {
                         console.log('✅ TURN server connectivity confirmed');
                         console.log('🔍 Working TURN servers:', turnTest.turnServersWorking);
+                        console.log('🔍 TURN server status:', turnTest.workingCount + '/' + turnTest.totalCount + ' working');
+                        
+                        // Show success message
+                        updateCallStatus('Connecting...', `TURN servers working (${turnTest.workingCount}/${turnTest.totalCount}). Establishing connection...`);
                     }
                     
                     // Reset call state for new call
@@ -1330,95 +1469,24 @@ Critical Functions:
                         }
                     }
 
-                    // Create WebRTC peer connection with enhanced ICE servers for external connectivity
+                    // Get optimized ICE servers based on health check
+                    const optimizedIceServers = await getOptimizedIceServers();
+                    console.log('🔍 Using optimized ICE servers:', optimizedIceServers.length, 'servers');
+                    
+                    // Create WebRTC peer connection with Render-optimized configuration
                     peerConnection = new RTCPeerConnection({
-                        iceServers: [
-                            // Google STUN servers (most reliable)
-                            { urls: 'stun:stun.l.google.com:19302' },
-                            { urls: 'stun:stun1.l.google.com:19302' },
-                            { urls: 'stun:stun2.l.google.com:19302' },
-                            { urls: 'stun:stun3.l.google.com:19302' },
-                            { urls: 'stun:stun4.l.google.com:19302' },
-                            
-                            // Cloudflare STUN servers
-                            { urls: 'stun:stun.cloudflare.com:3478' },
-                            
-                            // Additional reliable STUN servers
-                            { urls: 'stun:stun.voiparound.com' },
-                            { urls: 'stun:stun.voipbuster.com' },
-                            { urls: 'stun:stun.voipstunt.com' },
-                            { urls: 'stun:stun.counterpath.com' },
-                            { urls: 'stun:stun.1und1.de' },
-                            
-                            // Reliable TURN servers for NAT traversal
-                            {
-                                urls: 'turn:openrelay.metered.ca:80',
-                                username: 'openrelayproject',
-                                credential: 'openrelayproject'
-                            },
-                            {
-                                urls: 'turn:openrelay.metered.ca:443',
-                                username: 'openrelayproject',
-                                credential: 'openrelayproject'
-                            },
-                            {
-                                urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-                                username: 'openrelayproject',
-                                credential: 'openrelayproject'
-                            },
-                            // Alternative TURN servers
-                            {
-                                urls: 'turn:freeturn.tel:3478',
-                                username: 'free',
-                                credential: 'free'
-                            },
-                            {
-                                urls: 'turn:freeturn.tel:3478?transport=tcp',
-                                username: 'free',
-                                credential: 'free'
-                            },
-                            // Additional reliable TURN servers
-                            {
-                                urls: 'turn:relay.metered.ca:80',
-                                username: 'openrelayproject',
-                                credential: 'openrelayproject'
-                            },
-                            {
-                                urls: 'turn:relay.metered.ca:443',
-                                username: 'openrelayproject',
-                                credential: 'openrelayproject'
-                            },
-                            {
-                                urls: 'turn:relay.metered.ca:443?transport=tcp',
-                                username: 'openrelayproject',
-                                credential: 'openrelayproject'
-                            },
-                            // More TURN server options
-                            {
-                                urls: 'turn:turn.bistri.com:80',
-                                username: 'homeo',
-                                credential: 'homeo'
-                            },
-                            {
-                                urls: 'turn:turn.bistri.com:443',
-                                username: 'homeo',
-                                credential: 'homeo'
-                            },
-                            {
-                                urls: 'turn:turn.anyfirewall.com:80',
-                                username: 'webrtc',
-                                credential: 'webrtc'
-                            },
-                            {
-                                urls: 'turn:turn.anyfirewall.com:443',
-                                username: 'webrtc',
-                                credential: 'webrtc'
-                            }
-                        ],
-                        iceCandidatePoolSize: 20,
+                        iceServers: optimizedIceServers,
+                        iceCandidatePoolSize: 30,
                         iceTransportPolicy: 'all',
                         bundlePolicy: 'max-bundle',
-                        rtcpMuxPolicy: 'require'
+                        rtcpMuxPolicy: 'require',
+                        // Render-specific optimizations
+                        iceCandidateTimeout: 10000, // 10 seconds timeout
+                        iceGatheringTimeout: 15000, // 15 seconds for gathering
+                        // Additional Render optimizations
+                        sdpSemantics: 'unified-plan',
+                        // Force ICE gathering to be more aggressive
+                        iceGatheringState: 'gathering'
                     });
                     // Make peerConnection globally accessible
                     window.peerConnection = peerConnection;

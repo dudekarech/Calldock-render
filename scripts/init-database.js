@@ -2,6 +2,100 @@ const databaseManager = require('../database/config');
 const fs = require('fs');
 const path = require('path');
 
+// Function to properly split SQL statements, handling functions and DO blocks
+function splitSqlStatements(sql) {
+    const statements = [];
+    let currentStatement = '';
+    let inFunction = false;
+    let inDoBlock = false;
+    let dollarQuoteTag = '';
+    let parenDepth = 0;
+    let inComment = false;
+    
+    const lines = sql.split('\n');
+    
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        
+        // Skip empty lines and comments
+        if (!line || line.startsWith('--')) {
+            if (currentStatement.trim()) {
+                currentStatement += '\n';
+            }
+            continue;
+        }
+        
+        // Handle multi-line comments
+        if (line.includes('/*')) {
+            inComment = true;
+        }
+        if (line.includes('*/')) {
+            inComment = false;
+            continue;
+        }
+        if (inComment) {
+            continue;
+        }
+        
+        // Check for function definition
+        if (line.match(/CREATE\s+(OR\s+REPLACE\s+)?FUNCTION/i)) {
+            inFunction = true;
+        }
+        
+        // Check for DO block
+        if (line.match(/DO\s+\$\$/i)) {
+            inDoBlock = true;
+            dollarQuoteTag = '$$';
+        }
+        
+        // Check for custom dollar quoting
+        if (line.includes('$$') && !inDoBlock) {
+            if (!dollarQuoteTag) {
+                dollarQuoteTag = '$$';
+            } else if (line.includes(dollarQuoteTag)) {
+                dollarQuoteTag = '';
+            }
+        }
+        
+        // Track parentheses depth for function bodies
+        if (inFunction || inDoBlock) {
+            parenDepth += (line.match(/\(/g) || []).length;
+            parenDepth -= (line.match(/\)/g) || []).length;
+        }
+        
+        currentStatement += line + '\n';
+        
+        // Check if we're at the end of a statement
+        if (line.endsWith(';') && !inFunction && !inDoBlock && !dollarQuoteTag) {
+            const statement = currentStatement.trim();
+            if (statement && !statement.startsWith('--')) {
+                statements.push(statement);
+            }
+            currentStatement = '';
+        }
+        
+        // Check if we're at the end of a function
+        if (inFunction && line.includes('$$') && parenDepth <= 0) {
+            inFunction = false;
+            parenDepth = 0;
+        }
+        
+        // Check if we're at the end of a DO block
+        if (inDoBlock && line.includes('$$') && parenDepth <= 0) {
+            inDoBlock = false;
+            dollarQuoteTag = '';
+            parenDepth = 0;
+        }
+    }
+    
+    // Add any remaining statement
+    if (currentStatement.trim()) {
+        statements.push(currentStatement.trim());
+    }
+    
+    return statements.filter(stmt => stmt.length > 0);
+}
+
 async function initializeDatabase() {
     try {
         console.log('🗄️ Initializing database schema...');
@@ -13,11 +107,8 @@ async function initializeDatabase() {
         const initSqlPath = path.join(__dirname, '../database/init.sql');
         const initSql = fs.readFileSync(initSqlPath, 'utf8');
         
-        // Split SQL into individual statements
-        const statements = initSql
-            .split(';')
-            .map(stmt => stmt.trim())
-            .filter(stmt => stmt.length > 0 && !stmt.startsWith('--'));
+        // Split SQL into individual statements, handling functions and DO blocks
+        const statements = splitSqlStatements(initSql);
         
         console.log(`📝 Executing ${statements.length} SQL statements...`);
         
@@ -43,10 +134,7 @@ async function initializeDatabase() {
         const ivrSchemaPath = path.join(__dirname, '../database/ivr-schema.sql');
         if (fs.existsSync(ivrSchemaPath)) {
             const ivrSchema = fs.readFileSync(ivrSchemaPath, 'utf8');
-            const ivrStatements = ivrSchema
-                .split(';')
-                .map(stmt => stmt.trim())
-                .filter(stmt => stmt.length > 0 && !stmt.startsWith('--'));
+            const ivrStatements = splitSqlStatements(ivrSchema);
             
             console.log(`📝 Executing ${ivrStatements.length} IVR schema statements...`);
             

@@ -796,17 +796,39 @@ Critical Functions:
             let isDragging = false;
             let dragOffset = { x: 0, y: 0 };
             
-            // Function to test TURN server connectivity
+            // Function to test TURN server connectivity with multiple servers
             async function testTurnServerConnectivity() {
                 console.log('🔍 Testing TURN server connectivity...');
                 
                 const testConnection = new RTCPeerConnection({
                     iceServers: [
                         { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:stun1.l.google.com:19302' },
+                        // Test multiple TURN servers
                         {
                             urls: 'turn:openrelay.metered.ca:80',
                             username: 'openrelayproject',
                             credential: 'openrelayproject'
+                        },
+                        {
+                            urls: 'turn:openrelay.metered.ca:443',
+                            username: 'openrelayproject',
+                            credential: 'openrelayproject'
+                        },
+                        {
+                            urls: 'turn:freeturn.tel:3478',
+                            username: 'free',
+                            credential: 'free'
+                        },
+                        {
+                            urls: 'turn:turn.bistri.com:80',
+                            username: 'homeo',
+                            credential: 'homeo'
+                        },
+                        {
+                            urls: 'turn:turn.anyfirewall.com:80',
+                            username: 'webrtc',
+                            credential: 'webrtc'
                         }
                     ]
                 });
@@ -814,22 +836,35 @@ Critical Functions:
                 return new Promise((resolve) => {
                     let hasTurnCandidate = false;
                     let hasStunCandidate = false;
+                    let turnServersWorking = [];
+                    let stunServersWorking = [];
                     
                     testConnection.onicecandidate = (event) => {
                         if (event.candidate) {
                             console.log('🔍 Test candidate:', event.candidate.type, event.candidate.address);
                             if (event.candidate.type === 'relay') {
                                 hasTurnCandidate = true;
+                                turnServersWorking.push(event.candidate.relatedAddress + ':' + event.candidate.relatedPort);
+                                console.log('✅ TURN server working:', event.candidate.relatedAddress + ':' + event.candidate.relatedPort);
                             } else if (event.candidate.type === 'srflx') {
                                 hasStunCandidate = true;
+                                stunServersWorking.push(event.candidate.address + ':' + event.candidate.port);
+                                console.log('✅ STUN server working:', event.candidate.address + ':' + event.candidate.port);
                             }
                         } else {
                             console.log('🔍 TURN server test complete:', {
                                 hasTurnCandidate,
-                                hasStunCandidate
+                                hasStunCandidate,
+                                turnServersWorking,
+                                stunServersWorking
                             });
                             testConnection.close();
-                            resolve({ hasTurnCandidate, hasStunCandidate });
+                            resolve({ 
+                                hasTurnCandidate, 
+                                hasStunCandidate,
+                                turnServersWorking,
+                                stunServersWorking
+                            });
                         }
                     };
 
@@ -838,14 +873,24 @@ Critical Functions:
                         testConnection.setLocalDescription(offer);
                     }).catch(e => {
                         console.error('Error testing TURN server:', e);
-                        resolve({ hasTurnCandidate: false, hasStunCandidate: false });
+                        resolve({ 
+                            hasTurnCandidate: false, 
+                            hasStunCandidate: false,
+                            turnServersWorking: [],
+                            stunServersWorking: []
+                        });
                     });
 
-                    // Timeout after 10 seconds
+                    // Timeout after 15 seconds to allow more time for TURN servers
                     setTimeout(() => {
                         testConnection.close();
-                        resolve({ hasTurnCandidate, hasStunCandidate });
-                    }, 10000);
+                        resolve({ 
+                            hasTurnCandidate, 
+                            hasStunCandidate,
+                            turnServersWorking,
+                            stunServersWorking
+                        });
+                    }, 15000);
                 });
             }
             
@@ -1026,11 +1071,13 @@ Critical Functions:
                     const result = await testTurnServerConnectivity();
                     
                     if (result.hasTurnCandidate) {
-                        alert('✅ Connection test successful!\n\nTURN servers are working properly.\nYour calls should work across different networks.');
+                        const turnServers = result.turnServersWorking.join(', ');
+                        alert(`✅ Connection test successful!\n\nTURN servers are working properly:\n${turnServers}\n\nYour calls should work across different networks.`);
                     } else if (result.hasStunCandidate) {
-                        alert('⚠️ Partial connection test results:\n\nSTUN servers are working, but TURN servers are not accessible.\nCalls may work on the same network but may fail across different networks.');
+                        const stunServers = result.stunServersWorking.join(', ');
+                        alert(`⚠️ Partial connection test results:\n\nSTUN servers are working: ${stunServers}\n\nBut TURN servers are not accessible.\nCalls may work on the same network but may fail across different networks.\n\nThis could be due to:\n- Firewall blocking TURN server ports\n- Network restrictions\n- TURN server downtime`);
                     } else {
-                        alert('❌ Connection test failed!\n\nNeither STUN nor TURN servers are accessible.\nThis may be due to network restrictions or firewall settings.');
+                        alert('❌ Connection test failed!\n\nNeither STUN nor TURN servers are accessible.\nThis may be due to:\n- Network restrictions or firewall settings\n- Internet connectivity issues\n- All servers being down\n\nPlease check your network connection and try again.');
                     }
                 } catch (error) {
                     console.error('Connection test error:', error);
@@ -1217,8 +1264,13 @@ Critical Functions:
                     if (!turnTest.hasTurnCandidate) {
                         console.warn('⚠️ No TURN candidates available - connection may fail across different networks');
                         console.log('🔍 STUN candidates available:', turnTest.hasStunCandidate);
+                        console.log('🔍 Working STUN servers:', turnTest.stunServersWorking);
+                        
+                        // Show warning to user
+                        updateCallStatus('Warning', 'TURN servers not accessible. Connection may fail across different networks.');
                     } else {
                         console.log('✅ TURN server connectivity confirmed');
+                        console.log('🔍 Working TURN servers:', turnTest.turnServersWorking);
                     }
                     
                     // Reset call state for new call
@@ -1298,7 +1350,7 @@ Critical Functions:
                             { urls: 'stun:stun.counterpath.com' },
                             { urls: 'stun:stun.1und1.de' },
                             
-                            // Free TURN servers (multiple options for reliability)
+                            // Reliable TURN servers for NAT traversal
                             {
                                 urls: 'turn:openrelay.metered.ca:80',
                                 username: 'openrelayproject',
@@ -1325,7 +1377,7 @@ Critical Functions:
                                 username: 'free',
                                 credential: 'free'
                             },
-                            // Additional TURN servers for better connectivity
+                            // Additional reliable TURN servers
                             {
                                 urls: 'turn:relay.metered.ca:80',
                                 username: 'openrelayproject',
@@ -1340,9 +1392,33 @@ Critical Functions:
                                 urls: 'turn:relay.metered.ca:443?transport=tcp',
                                 username: 'openrelayproject',
                                 credential: 'openrelayproject'
+                            },
+                            // More TURN server options
+                            {
+                                urls: 'turn:turn.bistri.com:80',
+                                username: 'homeo',
+                                credential: 'homeo'
+                            },
+                            {
+                                urls: 'turn:turn.bistri.com:443',
+                                username: 'homeo',
+                                credential: 'homeo'
+                            },
+                            {
+                                urls: 'turn:turn.anyfirewall.com:80',
+                                username: 'webrtc',
+                                credential: 'webrtc'
+                            },
+                            {
+                                urls: 'turn:turn.anyfirewall.com:443',
+                                username: 'webrtc',
+                                credential: 'webrtc'
                             }
                         ],
-                        iceCandidatePoolSize: 10
+                        iceCandidatePoolSize: 20,
+                        iceTransportPolicy: 'all',
+                        bundlePolicy: 'max-bundle',
+                        rtcpMuxPolicy: 'require'
                     });
                     // Make peerConnection globally accessible
                     window.peerConnection = peerConnection;

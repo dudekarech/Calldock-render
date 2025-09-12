@@ -633,7 +633,7 @@ Critical Functions:
                             { urls: 'stun:stun.counterpath.com' },
                             { urls: 'stun:stun.1und1.de' },
                             
-                            // Free TURN servers (multiple options for reliability)
+                            // Reliable TURN servers for NAT traversal
                             {
                                 urls: 'turn:openrelay.metered.ca:80',
                                 username: 'openrelayproject',
@@ -660,7 +660,7 @@ Critical Functions:
                                 username: 'free',
                                 credential: 'free'
                             },
-                            // Additional TURN servers for better connectivity
+                            // Additional reliable TURN servers
                             {
                                 urls: 'turn:relay.metered.ca:80',
                                 username: 'openrelayproject',
@@ -675,9 +675,33 @@ Critical Functions:
                                 urls: 'turn:relay.metered.ca:443?transport=tcp',
                                 username: 'openrelayproject',
                                 credential: 'openrelayproject'
+                            },
+                            // More TURN server options
+                            {
+                                urls: 'turn:turn.bistri.com:80',
+                                username: 'homeo',
+                                credential: 'homeo'
+                            },
+                            {
+                                urls: 'turn:turn.bistri.com:443',
+                                username: 'homeo',
+                                credential: 'homeo'
+                            },
+                            {
+                                urls: 'turn:turn.anyfirewall.com:80',
+                                username: 'webrtc',
+                                credential: 'webrtc'
+                            },
+                            {
+                                urls: 'turn:turn.anyfirewall.com:443',
+                                username: 'webrtc',
+                                credential: 'webrtc'
                             }
                         ],
-                        iceCandidatePoolSize: 10
+                        iceCandidatePoolSize: 20,
+                        iceTransportPolicy: 'all',
+                        bundlePolicy: 'max-bundle',
+                        rtcpMuxPolicy: 'require'
                     });
                     console.log('✅ WebRTC peer connection created');
                     

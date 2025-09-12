@@ -975,9 +975,18 @@ Critical Functions:
             // Function to get Metered.ca static TURN servers as fallback
             function getMeteredStaticServers() {
                 return [
+                    // STUN servers
                     {
                         urls: "stun:stun.relay.metered.ca:80",
                     },
+                    {
+                        urls: "stun:stun.l.google.com:19302",
+                    },
+                    {
+                        urls: "stun:stun1.l.google.com:19302",
+                    },
+                    
+                    // TURN servers with proper credentials and multiple protocols
                     {
                         urls: "turn:global.relay.metered.ca:80",
                         username: "4a605c708b7903d308093c7b",
@@ -994,7 +1003,34 @@ Critical Functions:
                         credential: "2JRxRSrJrBBycVy6",
                     },
                     {
+                        urls: "turn:global.relay.metered.ca:443?transport=tcp",
+                        username: "4a605c708b7903d308093c7b",
+                        credential: "2JRxRSrJrBBycVy6",
+                    },
+                    {
+                        urls: "turns:global.relay.metered.ca:443",
+                        username: "4a605c708b7903d308093c7b",
+                        credential: "2JRxRSrJrBBycVy6",
+                    },
+                    {
                         urls: "turns:global.relay.metered.ca:443?transport=tcp",
+                        username: "4a605c708b7903d308093c7b",
+                        credential: "2JRxRSrJrBBycVy6",
+                    },
+                    
+                    // Additional Metered.ca TURN servers for redundancy
+                    {
+                        urls: "turn:relay.metered.ca:80",
+                        username: "4a605c708b7903d308093c7b",
+                        credential: "2JRxRSrJrBBycVy6",
+                    },
+                    {
+                        urls: "turn:relay.metered.ca:443",
+                        username: "4a605c708b7903d308093c7b",
+                        credential: "2JRxRSrJrBBycVy6",
+                    },
+                    {
+                        urls: "turn:relay.metered.ca:443?transport=tcp",
                         username: "4a605c708b7903d308093c7b",
                         credential: "2JRxRSrJrBBycVy6",
                     }
@@ -1578,13 +1614,13 @@ Critical Functions:
                     peerConnection = new RTCPeerConnection({
                         iceServers: optimizedIceServers,
                         iceCandidatePoolSize: 30,
-                        iceTransportPolicy: 'all',
+                        iceTransportPolicy: 'all', // Allow all transport types
                         bundlePolicy: 'max-bundle',
                         rtcpMuxPolicy: 'require',
-                        // Render-specific optimizations
-                        iceCandidateTimeout: 10000, // 10 seconds timeout
-                        iceGatheringTimeout: 15000, // 15 seconds for gathering
-                        // Additional Render optimizations
+                        // Enhanced TURN server configuration
+                        iceCandidateTimeout: 15000, // 15 seconds timeout for TURN
+                        iceGatheringTimeout: 20000, // 20 seconds for gathering
+                        // Additional optimizations for TURN connectivity
                         sdpSemantics: 'unified-plan',
                         // Force ICE gathering to be more aggressive
                         iceGatheringState: 'gathering'

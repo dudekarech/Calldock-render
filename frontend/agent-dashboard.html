@@ -616,18 +616,24 @@ Critical Functions:
                     // Create WebRTC peer connection with enhanced ICE servers for external connectivity
                     peerConnection = new RTCPeerConnection({
                         iceServers: [
-                            // Google STUN servers
+                            // Google STUN servers (most reliable)
                             { urls: 'stun:stun.l.google.com:19302' },
                             { urls: 'stun:stun1.l.google.com:19302' },
                             { urls: 'stun:stun2.l.google.com:19302' },
-                            // Additional STUN servers for better connectivity
+                            { urls: 'stun:stun3.l.google.com:19302' },
+                            { urls: 'stun:stun4.l.google.com:19302' },
+                            
+                            // Cloudflare STUN servers
                             { urls: 'stun:stun.cloudflare.com:3478' },
+                            
+                            // Additional reliable STUN servers
                             { urls: 'stun:stun.voiparound.com' },
                             { urls: 'stun:stun.voipbuster.com' },
                             { urls: 'stun:stun.voipstunt.com' },
                             { urls: 'stun:stun.counterpath.com' },
                             { urls: 'stun:stun.1und1.de' },
-                            // TURN servers for NAT traversal (free public TURN servers)
+                            
+                            // Free TURN servers (multiple options for reliability)
                             {
                                 urls: 'turn:openrelay.metered.ca:80',
                                 username: 'openrelayproject',
@@ -640,6 +646,33 @@ Critical Functions:
                             },
                             {
                                 urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+                                username: 'openrelayproject',
+                                credential: 'openrelayproject'
+                            },
+                            // Alternative TURN servers
+                            {
+                                urls: 'turn:freeturn.tel:3478',
+                                username: 'free',
+                                credential: 'free'
+                            },
+                            {
+                                urls: 'turn:freeturn.tel:3478?transport=tcp',
+                                username: 'free',
+                                credential: 'free'
+                            },
+                            // Additional TURN servers for better connectivity
+                            {
+                                urls: 'turn:relay.metered.ca:80',
+                                username: 'openrelayproject',
+                                credential: 'openrelayproject'
+                            },
+                            {
+                                urls: 'turn:relay.metered.ca:443',
+                                username: 'openrelayproject',
+                                credential: 'openrelayproject'
+                            },
+                            {
+                                urls: 'turn:relay.metered.ca:443?transport=tcp',
                                 username: 'openrelayproject',
                                 credential: 'openrelayproject'
                             }
@@ -682,14 +715,34 @@ Critical Functions:
                         }
                     };
                     
-                    // Handle ICE candidates
+                    // Handle ICE candidates with enhanced debugging
                     peerConnection.onicecandidate = (event) => {
                         if (event.candidate) {
                             console.log('📤 ICE candidate generated:', event.candidate);
+                            console.log('🔍 Candidate type:', event.candidate.type, 'protocol:', event.candidate.protocol, 'address:', event.candidate.address);
+                            
+                            // Log candidate priority for debugging
+                            console.log('🔍 Candidate priority:', event.candidate.priority);
+                            
+                            // Check if this is a TURN candidate (relay)
+                            if (event.candidate.type === 'relay') {
+                                console.log('✅ TURN candidate generated - NAT traversal should work');
+                                console.log('🔍 TURN server:', event.candidate.relatedAddress, ':', event.candidate.relatedPort);
+                            } else if (event.candidate.type === 'srflx') {
+                                console.log('✅ STUN candidate generated - public IP discovered');
+                                console.log('🔍 Public IP:', event.candidate.address, ':', event.candidate.port);
+                            } else if (event.candidate.type === 'host') {
+                                console.log('🔍 Host candidate generated - local network');
+                            }
+                            
                             // Send ICE candidate to caller via WebSocket
                             if (websocketClient) {
                                 websocketClient.sendICECandidate('anonymous', event.candidate, callId);
+                                console.log('📤 ICE candidate sent to caller');
                             }
+                        } else {
+                            console.log('✅ ICE gathering complete - no more candidates');
+                            console.log('🔍 Total candidates gathered:', peerConnection.localDescription ? 'Yes' : 'No');
                         }
                     };
                     

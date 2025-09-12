@@ -648,6 +648,11 @@ Critical Functions:
                         <i class="fas fa-microphone mr-2"></i>
                         Test Audio
                     </button>
+                    
+                    <button id="testConnectionBtn" class="w-full bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 transition-colors flex items-center justify-center">
+                        <i class="fas fa-wifi mr-2"></i>
+                        Test Connection
+                    </button>
                 </div>
             </div>
         </div>
@@ -790,6 +795,59 @@ Critical Functions:
             let isWidgetExpanded = false;
             let isDragging = false;
             let dragOffset = { x: 0, y: 0 };
+            
+            // Function to test TURN server connectivity
+            async function testTurnServerConnectivity() {
+                console.log('🔍 Testing TURN server connectivity...');
+                
+                const testConnection = new RTCPeerConnection({
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        {
+                            urls: 'turn:openrelay.metered.ca:80',
+                            username: 'openrelayproject',
+                            credential: 'openrelayproject'
+                        }
+                    ]
+                });
+
+                return new Promise((resolve) => {
+                    let hasTurnCandidate = false;
+                    let hasStunCandidate = false;
+                    
+                    testConnection.onicecandidate = (event) => {
+                        if (event.candidate) {
+                            console.log('🔍 Test candidate:', event.candidate.type, event.candidate.address);
+                            if (event.candidate.type === 'relay') {
+                                hasTurnCandidate = true;
+                            } else if (event.candidate.type === 'srflx') {
+                                hasStunCandidate = true;
+                            }
+                        } else {
+                            console.log('🔍 TURN server test complete:', {
+                                hasTurnCandidate,
+                                hasStunCandidate
+                            });
+                            testConnection.close();
+                            resolve({ hasTurnCandidate, hasStunCandidate });
+                        }
+                    };
+
+                    // Create a dummy offer to trigger ICE gathering
+                    testConnection.createOffer().then(offer => {
+                        testConnection.setLocalDescription(offer);
+                    }).catch(e => {
+                        console.error('Error testing TURN server:', e);
+                        resolve({ hasTurnCandidate: false, hasStunCandidate: false });
+                    });
+
+                    // Timeout after 10 seconds
+                    setTimeout(() => {
+                        testConnection.close();
+                        resolve({ hasTurnCandidate, hasStunCandidate });
+                    }, 10000);
+                });
+            }
             
             // WebSocket connection for signaling (optional)
             // WebSocket client is now handled by WebSocketClient class
@@ -954,6 +1012,32 @@ Critical Functions:
                     stopAudioTest();
                 } else {
                     startAudioTest();
+                }
+            });
+
+            // Test connection button
+            const testConnectionBtn = document.getElementById('testConnectionBtn');
+            testConnectionBtn.addEventListener('click', async function() {
+                const originalText = testConnectionBtn.innerHTML;
+                testConnectionBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Testing...';
+                testConnectionBtn.disabled = true;
+                
+                try {
+                    const result = await testTurnServerConnectivity();
+                    
+                    if (result.hasTurnCandidate) {
+                        alert('✅ Connection test successful!\n\nTURN servers are working properly.\nYour calls should work across different networks.');
+                    } else if (result.hasStunCandidate) {
+                        alert('⚠️ Partial connection test results:\n\nSTUN servers are working, but TURN servers are not accessible.\nCalls may work on the same network but may fail across different networks.');
+                    } else {
+                        alert('❌ Connection test failed!\n\nNeither STUN nor TURN servers are accessible.\nThis may be due to network restrictions or firewall settings.');
+                    }
+                } catch (error) {
+                    console.error('Connection test error:', error);
+                    alert('❌ Connection test failed with error: ' + error.message);
+                } finally {
+                    testConnectionBtn.innerHTML = originalText;
+                    testConnectionBtn.disabled = false;
                 }
             });
 
@@ -1128,6 +1212,15 @@ Critical Functions:
                 try {
                     console.log('Starting real WebRTC call...');
                     
+                    // Test TURN server connectivity first
+                    const turnTest = await testTurnServerConnectivity();
+                    if (!turnTest.hasTurnCandidate) {
+                        console.warn('⚠️ No TURN candidates available - connection may fail across different networks');
+                        console.log('🔍 STUN candidates available:', turnTest.hasStunCandidate);
+                    } else {
+                        console.log('✅ TURN server connectivity confirmed');
+                    }
+                    
                     // Reset call state for new call
                     isInCall = false;
                     answerApplied = false;
@@ -1188,18 +1281,24 @@ Critical Functions:
                     // Create WebRTC peer connection with enhanced ICE servers for external connectivity
                     peerConnection = new RTCPeerConnection({
                         iceServers: [
-                            // Google STUN servers
+                            // Google STUN servers (most reliable)
                             { urls: 'stun:stun.l.google.com:19302' },
                             { urls: 'stun:stun1.l.google.com:19302' },
                             { urls: 'stun:stun2.l.google.com:19302' },
-                            // Additional STUN servers for better connectivity
+                            { urls: 'stun:stun3.l.google.com:19302' },
+                            { urls: 'stun:stun4.l.google.com:19302' },
+                            
+                            // Cloudflare STUN servers
                             { urls: 'stun:stun.cloudflare.com:3478' },
+                            
+                            // Additional reliable STUN servers
                             { urls: 'stun:stun.voiparound.com' },
                             { urls: 'stun:stun.voipbuster.com' },
                             { urls: 'stun:stun.voipstunt.com' },
                             { urls: 'stun:stun.counterpath.com' },
                             { urls: 'stun:stun.1und1.de' },
-                            // TURN servers for NAT traversal (free public TURN servers)
+                            
+                            // Free TURN servers (multiple options for reliability)
                             {
                                 urls: 'turn:openrelay.metered.ca:80',
                                 username: 'openrelayproject',
@@ -1214,6 +1313,17 @@ Critical Functions:
                                 urls: 'turn:openrelay.metered.ca:443?transport=tcp',
                                 username: 'openrelayproject',
                                 credential: 'openrelayproject'
+                            },
+                            // Alternative TURN servers
+                            {
+                                urls: 'turn:freeturn.tel:3478',
+                                username: 'free',
+                                credential: 'free'
+                            },
+                            {
+                                urls: 'turn:freeturn.tel:3478?transport=tcp',
+                                username: 'free',
+                                credential: 'free'
                             },
                             // Additional TURN servers for better connectivity
                             {
@@ -1316,7 +1426,7 @@ Critical Functions:
                         console.log('ontrack: Remote media ready, waiting for answer processing to complete');
                     };
 
-                    // Handle ICE candidates
+                    // Handle ICE candidates with enhanced debugging
                     peerConnection.onicecandidate = (event) => {
                         if (event.candidate) {
                             console.log('ICE candidate generated:', event.candidate);
@@ -1328,13 +1438,26 @@ Critical Functions:
                             // Check if this is a TURN candidate (relay)
                             if (event.candidate.type === 'relay') {
                                 console.log('✅ TURN candidate generated - NAT traversal should work');
+                                console.log('🔍 TURN server:', event.candidate.relatedAddress, ':', event.candidate.relatedPort);
                             } else if (event.candidate.type === 'srflx') {
                                 console.log('✅ STUN candidate generated - public IP discovered');
+                                console.log('🔍 Public IP:', event.candidate.address, ':', event.candidate.port);
                             } else if (event.candidate.type === 'host') {
                                 console.log('🔍 Host candidate generated - local network');
                             }
+                            
+                            // Send ICE candidate to the other peer
+                            if (window.websocketClient && window.websocketClient.isConnected()) {
+                                window.websocketClient.sendMessage({
+                                    type: 'ice_candidate',
+                                    candidate: event.candidate,
+                                    callId: callId
+                                });
+                                console.log('📤 ICE candidate sent via WebSocket');
+                            }
                         } else {
                             console.log('✅ ICE gathering complete - no more candidates');
+                            console.log('🔍 Total candidates gathered:', peerConnection.localDescription ? 'Yes' : 'No');
                         }
                     };
 
@@ -1370,6 +1493,29 @@ Critical Functions:
                                         console.log('🔍 Attempting ICE restart...');
                                         try {
                                             peerConnection.restartIce();
+                                            
+                                            // Also try to create a new offer if ICE restart doesn't work
+                                            setTimeout(async () => {
+                                                if (peerConnection && peerConnection.connectionState === 'failed') {
+                                                    console.log('🔍 ICE restart failed, trying new offer...');
+                                                    try {
+                                                        const newOffer = await peerConnection.createOffer();
+                                                        await peerConnection.setLocalDescription(newOffer);
+                                                        
+                                                        // Send new offer via WebSocket
+                                                        if (window.websocketClient && window.websocketClient.isConnected()) {
+                                                            window.websocketClient.sendMessage({
+                                                                type: 'webrtc_offer',
+                                                                offer: newOffer,
+                                                                callId: callId
+                                                            });
+                                                            console.log('📤 New offer sent after ICE restart');
+                                                        }
+                                                    } catch (e) {
+                                                        console.log('🔍 New offer creation failed:', e);
+                                                    }
+                                                }
+                                            }, 3000);
                                         } catch (e) {
                                             console.log('🔍 ICE restart failed:', e);
                                         }
@@ -1397,6 +1543,21 @@ Critical Functions:
                         // Handle ICE connection state changes
                         if (peerConnection.iceConnectionState === 'connected' || peerConnection.iceConnectionState === 'completed') {
                             console.log('✅ ICE connection established successfully!');
+                            console.log('🔍 ICE connection type:', peerConnection.iceConnectionState);
+                            
+                            // Log connection statistics
+                            peerConnection.getStats().then(stats => {
+                                stats.forEach(report => {
+                                    if (report.type === 'candidate-pair' && report.state === 'succeeded') {
+                                        console.log('🔍 Successful candidate pair:', {
+                                            localCandidate: report.localCandidateId,
+                                            remoteCandidate: report.remoteCandidateId,
+                                            priority: report.priority
+                                        });
+                                    }
+                                });
+                            });
+                            
                             // Ensure call state is set if not already set
                             if (!isInCall) {
                                 isInCall = true;
@@ -1408,6 +1569,21 @@ Critical Functions:
                         } else if (peerConnection.iceConnectionState === 'failed' || peerConnection.iceConnectionState === 'disconnected') {
                             console.log('❌ ICE connection failed or disconnected');
                             console.log('🔍 ICE connection failed - checking if we can recover...');
+                            
+                            // Log detailed failure information
+                            peerConnection.getStats().then(stats => {
+                                console.log('🔍 ICE connection stats on failure:');
+                                stats.forEach(report => {
+                                    if (report.type === 'candidate-pair') {
+                                        console.log('🔍 Candidate pair:', {
+                                            state: report.state,
+                                            priority: report.priority,
+                                            localCandidate: report.localCandidateId,
+                                            remoteCandidate: report.remoteCandidateId
+                                        });
+                                    }
+                                });
+                            });
                             
                             // Don't immediately disconnect - let the connection state handler manage recovery
                             // The connection state change handler will attempt recovery
@@ -1422,6 +1598,31 @@ Critical Functions:
                     // Monitor ICE gathering state
                     peerConnection.onicegatheringstatechange = (event) => {
                         console.log('ICE gathering state:', peerConnection.iceGatheringState);
+                        
+                        if (peerConnection.iceGatheringState === 'complete') {
+                            console.log('🔍 ICE gathering complete - checking for TURN candidates...');
+                            
+                            // Check if we have any TURN candidates
+                            peerConnection.getStats().then(stats => {
+                                let hasTurnCandidate = false;
+                                stats.forEach(report => {
+                                    if (report.type === 'local-candidate' && report.candidateType === 'relay') {
+                                        hasTurnCandidate = true;
+                                        console.log('✅ TURN candidate found:', report.url);
+                                    }
+                                });
+                                
+                                if (!hasTurnCandidate) {
+                                    console.warn('⚠️ No TURN candidates found - this may cause connection issues across different networks');
+                                    console.log('🔍 This could be due to:');
+                                    console.log('  - TURN servers being unreachable');
+                                    console.log('  - Firewall blocking TURN server ports');
+                                    console.log('  - Network restrictions');
+                                } else {
+                                    console.log('✅ TURN candidates available - NAT traversal should work');
+                                }
+                            });
+                        }
                     };
 
                     // Create offer

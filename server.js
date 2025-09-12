@@ -50,7 +50,7 @@ const authRoutes = require('./routes/auth');
                     scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.tailwindcss.com", "https://cdn.jsdelivr.net"],
                     scriptSrcAttr: ["'unsafe-inline'"],
                     imgSrc: ["'self'", "data:", "https:"],
-                    connectSrc: ["'self'", "ws:", "wss:", "http://localhost:3000", "wss://*.onrender.com", "https://*.onrender.com"],
+                    connectSrc: ["'self'", "ws:", "wss:", "http://localhost:3000", "wss://*.onrender.com", "https://*.onrender.com", "https://calldocker.metered.live"],
                     mediaSrc: ["'self'", "blob:", "https:"],
                     fontSrc: ["'self'", "https://cdnjs.cloudflare.com", "https://fonts.gstatic.com", "https://fonts.googleapis.com"],
                 },

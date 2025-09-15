@@ -658,6 +658,11 @@ Critical Functions:
                         <i class="fas fa-server mr-2"></i>
                         Test All Servers
                     </button>
+                    
+                    <button id="testRelayOnlyBtn" class="w-full bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 transition-colors flex items-center justify-center">
+                        <i class="fas fa-exchange-alt mr-2"></i>
+                        Test Relay-Only Mode
+                    </button>
                 </div>
             </div>
         </div>
@@ -1045,6 +1050,57 @@ Critical Functions:
                 return iceServers;
             }
 
+            // Function to start WebRTC stats monitoring for audio packet flow
+            function startWebRTCStatsMonitoring() {
+                if (window.statsInterval) {
+                    clearInterval(window.statsInterval);
+                }
+                
+                window.statsInterval = setInterval(async () => {
+                    if (peerConnection && peerConnection.connectionState === 'connected') {
+                        try {
+                            const stats = await peerConnection.getStats();
+                            let audioPacketsReceived = 0;
+                            let audioBytesReceived = 0;
+                            let audioPacketsSent = 0;
+                            let audioBytesSent = 0;
+                            
+                            stats.forEach(report => {
+                                if (report.type === 'inbound-rtp' && report.kind === 'audio') {
+                                    audioPacketsReceived = report.packetsReceived || 0;
+                                    audioBytesReceived = report.bytesReceived || 0;
+                                    console.log('🔍 Inbound audio stats:', {
+                                        packetsReceived: audioPacketsReceived,
+                                        bytesReceived: audioBytesReceived,
+                                        packetsLost: report.packetsLost || 0,
+                                        jitter: report.jitter || 0
+                                    });
+                                } else if (report.type === 'outbound-rtp' && report.kind === 'audio') {
+                                    audioPacketsSent = report.packetsSent || 0;
+                                    audioBytesSent = report.bytesSent || 0;
+                                    console.log('🔍 Outbound audio stats:', {
+                                        packetsSent: audioPacketsSent,
+                                        bytesSent: audioBytesSent,
+                                        packetsLost: report.packetsLost || 0
+                                    });
+                                }
+                            });
+                            
+                            if (audioPacketsReceived === 0 && audioBytesReceived === 0) {
+                                console.log('⚠️ No audio packets received - audio may not be flowing');
+                            } else {
+                                console.log('✅ Audio packets flowing:', {
+                                    received: audioPacketsReceived,
+                                    sent: audioPacketsSent
+                                });
+                            }
+                        } catch (error) {
+                            console.log('❌ Error getting WebRTC stats:', error);
+                        }
+                    }
+                }, 3000); // Check every 3 seconds
+            }
+
             // Function to test TURN server connectivity with Metered.ca priority
             async function testTurnServerConnectivity() {
                 console.log('🔍 Testing TURN server connectivity...');
@@ -1280,6 +1336,76 @@ Critical Functions:
                     testConnectionBtn.disabled = false;
                 }
             });
+
+            // Test relay-only mode button
+            const testRelayOnlyBtn = document.getElementById('testRelayOnlyBtn');
+            if (testRelayOnlyBtn) {
+                testRelayOnlyBtn.addEventListener('click', async function() {
+                    const originalText = testRelayOnlyBtn.innerHTML;
+                    testRelayOnlyBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Testing...';
+                    testRelayOnlyBtn.disabled = true;
+                    
+                    try {
+                        console.log('🔍 Testing relay-only mode...');
+                        
+                        // Get Metered.ca API credentials
+                        const meteredCredentials = await fetchMeteredTurnCredentials();
+                        if (!meteredCredentials || meteredCredentials.length === 0) {
+                            alert('❌ No Metered.ca TURN credentials available for relay-only test');
+                            return;
+                        }
+                        
+                        // Create peer connection with relay-only policy
+                        const testConnection = new RTCPeerConnection({
+                            iceServers: meteredCredentials,
+                            iceTransportPolicy: 'relay' // Force relay-only mode
+                        });
+                        
+                        let hasRelayCandidate = false;
+                        let candidateCount = 0;
+                        
+                        testConnection.onicecandidate = (event) => {
+                            if (event.candidate) {
+                                candidateCount++;
+                                if (event.candidate.candidate.includes('typ relay')) {
+                                    hasRelayCandidate = true;
+                                    console.log('✅ Relay candidate found:', event.candidate.candidate);
+                                }
+                            }
+                        };
+                        
+                        testConnection.onicegatheringstatechange = () => {
+                            if (testConnection.iceGatheringState === 'complete') {
+                                testConnection.close();
+                                
+                                if (hasRelayCandidate) {
+                                    alert(`✅ Relay-only test successful!\n\nFound ${candidateCount} candidates, including relay candidates.\n\nTURN servers are working properly for NAT traversal.`);
+                                } else {
+                                    alert(`❌ Relay-only test failed!\n\nFound ${candidateCount} candidates but no relay candidates.\n\nTURN servers may not be working properly.`);
+                                }
+                            }
+                        };
+                        
+                        // Timeout after 10 seconds
+                        setTimeout(() => {
+                            testConnection.close();
+                            if (!hasRelayCandidate) {
+                                alert('❌ Relay-only test timeout!\n\nNo relay candidates found within 10 seconds.\n\nTURN servers may not be working properly.');
+                            }
+                        }, 10000);
+                        
+                        // Create a data channel to trigger ICE gathering
+                        testConnection.createDataChannel('test');
+                        
+                    } catch (error) {
+                        console.error('Relay-only test error:', error);
+                        alert('❌ Relay-only test failed with error: ' + error.message);
+                    } finally {
+                        testRelayOnlyBtn.innerHTML = originalText;
+                        testRelayOnlyBtn.disabled = false;
+                    }
+                });
+            }
 
             // Test all servers button
             const testAllServersBtn = document.getElementById('testAllServersBtn');
@@ -1611,14 +1737,17 @@ Critical Functions:
                             console.log('🔍 Audio track details:', audioTracks[0].label, audioTracks[0].enabled, audioTracks[0].muted);
                         }
                         
-                        // Handle remote audio
+                        // Handle remote audio with enhanced configuration
                         const remoteAudio = document.createElement('audio');
                         remoteAudio.id = 'remoteAudio';
                         remoteAudio.srcObject = remoteStream;
                         remoteAudio.autoplay = true;
+                        remoteAudio.playsInline = true; // Important for mobile
                         remoteAudio.volume = 1.0;
                         remoteAudio.muted = false; // Ensure not muted
                         remoteAudio.controls = false; // Hide controls
+                        remoteAudio.loop = false;
+                        remoteAudio.preload = 'auto';
                         
                         // Add event listeners for debugging
                         remoteAudio.addEventListener('loadstart', () => console.log('🔍 Audio loadstart'));
@@ -1801,6 +1930,9 @@ Critical Functions:
                                     }
                                 });
                             });
+                            
+                            // Start WebRTC stats monitoring for audio packet flow
+                            startWebRTCStatsMonitoring();
                             
                             // Ensure call state is set if not already set
                             if (!isInCall) {

@@ -749,6 +749,68 @@ Critical Functions:
                         }
                     };
                     
+                    // Handle ICE connection state changes with detailed logging
+                    peerConnection.oniceconnectionstatechange = (event) => {
+                        console.log('🔍 ICE connection state:', peerConnection.iceConnectionState);
+                        
+                        if (peerConnection.iceConnectionState === 'connected' || peerConnection.iceConnectionState === 'completed') {
+                            console.log('✅ ICE connection established successfully');
+                            
+                            // Log successful candidate pair
+                            peerConnection.getStats().then(stats => {
+                                stats.forEach(report => {
+                                    if (report.type === 'candidate-pair' && report.state === 'succeeded') {
+                                        console.log('✅ Successful candidate pair:', {
+                                            localCandidate: report.localCandidateId,
+                                            remoteCandidate: report.remoteCandidateId,
+                                            priority: report.priority,
+                                            nominated: report.nominated
+                                        });
+                                    }
+                                });
+                            });
+                            
+                            // Start WebRTC stats monitoring for audio packet flow
+                            startWebRTCStatsMonitoring();
+                        } else if (peerConnection.iceConnectionState === 'disconnected' || peerConnection.iceConnectionState === 'failed') {
+                            console.log('❌ ICE connection failed or disconnected');
+                            console.log('🔍 ICE connection failed - checking if we can recover...');
+                            
+                            // Check ICE connection stats on failure
+                            peerConnection.getStats().then(stats => {
+                                console.log('🔍 ICE connection stats on failure:');
+                                let hasSuccessfulPair = false;
+                                let hasTurnCandidate = false;
+                                
+                                stats.forEach(report => {
+                                    if (report.type === 'candidate-pair') {
+                                        console.log(`🔍 Candidate pair state: ${report.state}`, {
+                                            local: report.localCandidateId,
+                                            remote: report.remoteCandidateId,
+                                            priority: report.priority
+                                        });
+                                        if (report.state === 'succeeded') hasSuccessfulPair = true;
+                                    } else if (report.type === 'local-candidate' && report.candidateType === 'relay') {
+                                        hasTurnCandidate = true;
+                                        console.log('✅ TURN candidate found:', report.url);
+                                    }
+                                });
+                                
+                                if (hasSuccessfulPair) {
+                                    console.log('✅ Successful candidate pair found but ICE still failed');
+                                } else {
+                                    console.log('❌ No successful candidate pairs found');
+                                }
+                                
+                                if (hasTurnCandidate) {
+                                    console.log('✅ TURN candidates available - NAT traversal should work');
+                                } else {
+                                    console.log('❌ No TURN candidates - NAT traversal may fail');
+                                }
+                            });
+                        }
+                    };
+
                     // Handle connection state changes
                     peerConnection.onconnectionstatechange = () => {
                         console.log('🔗 Connection state changed:', peerConnection.connectionState);
@@ -1504,6 +1566,57 @@ Critical Functions:
                 checkForPendingCalls();
             });
             header.querySelector('.flex').appendChild(refreshButton);
+
+            // Function to start WebRTC stats monitoring for audio packet flow
+            function startWebRTCStatsMonitoring() {
+                if (window.statsInterval) {
+                    clearInterval(window.statsInterval);
+                }
+                
+                window.statsInterval = setInterval(async () => {
+                    if (peerConnection && peerConnection.connectionState === 'connected') {
+                        try {
+                            const stats = await peerConnection.getStats();
+                            let audioPacketsReceived = 0;
+                            let audioBytesReceived = 0;
+                            let audioPacketsSent = 0;
+                            let audioBytesSent = 0;
+                            
+                            stats.forEach(report => {
+                                if (report.type === 'inbound-rtp' && report.kind === 'audio') {
+                                    audioPacketsReceived = report.packetsReceived || 0;
+                                    audioBytesReceived = report.bytesReceived || 0;
+                                    console.log('🔍 Inbound audio stats:', {
+                                        packetsReceived: audioPacketsReceived,
+                                        bytesReceived: audioBytesReceived,
+                                        packetsLost: report.packetsLost || 0,
+                                        jitter: report.jitter || 0
+                                    });
+                                } else if (report.type === 'outbound-rtp' && report.kind === 'audio') {
+                                    audioPacketsSent = report.packetsSent || 0;
+                                    audioBytesSent = report.bytesSent || 0;
+                                    console.log('🔍 Outbound audio stats:', {
+                                        packetsSent: audioPacketsSent,
+                                        bytesSent: audioBytesSent,
+                                        packetsLost: report.packetsLost || 0
+                                    });
+                                }
+                            });
+                            
+                            if (audioPacketsReceived === 0 && audioBytesReceived === 0) {
+                                console.log('⚠️ No audio packets received - audio may not be flowing');
+                            } else {
+                                console.log('✅ Audio packets flowing:', {
+                                    received: audioPacketsReceived,
+                                    sent: audioPacketsSent
+                                });
+                            }
+                        } catch (error) {
+                            console.log('❌ Error getting WebRTC stats:', error);
+                        }
+                    }
+                }, 3000); // Check every 3 seconds
+            }
 
             // WebRTC test function
             async function testWebRTC() {

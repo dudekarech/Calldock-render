@@ -22,6 +22,84 @@ const authenticateAdmin = (req, res, next) => {
     }
 };
 
+// Create admin user endpoint (for initial setup)
+router.post('/create-admin', async (req, res) => {
+    try {
+        const databaseManager = require('../database/config');
+        const bcrypt = require('bcryptjs');
+        
+        // Check if admin user already exists
+        const existingAdmin = await databaseManager.query(
+            'SELECT id FROM users WHERE email = $1',
+            ['admin@calldocker.com']
+        );
+        
+        if (existingAdmin.rows.length > 0) {
+            return res.json({
+                success: true,
+                message: 'Admin user already exists',
+                email: 'admin@calldocker.com',
+                password: 'admin123'
+            });
+        }
+        
+        // Create default company first
+        const companyResult = await databaseManager.query(`
+            INSERT INTO companies (name, uuid, status, settings, created_at, updated_at)
+            VALUES ('CallDocker Global', 'calldocker', 'active', '{}', NOW(), NOW())
+            ON CONFLICT (uuid) DO NOTHING
+            RETURNING id
+        `);
+        
+        let companyId;
+        if (companyResult.rows.length > 0) {
+            companyId = companyResult.rows[0].id;
+        } else {
+            // Get existing company ID
+            const existingCompany = await databaseManager.query(
+                'SELECT id FROM companies WHERE uuid = $1',
+                ['calldocker']
+            );
+            companyId = existingCompany.rows[0].id;
+        }
+        
+        // Hash the admin password
+        const passwordHash = await bcrypt.hash('admin123', 12);
+        
+        // Create admin user
+        const adminResult = await databaseManager.query(`
+            INSERT INTO users (email, password_hash, role, company_id, first_name, last_name, is_active, status, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
+            RETURNING id, email, role
+        `, [
+            'admin@calldocker.com',
+            passwordHash,
+            'super_admin',
+            companyId,
+            'Super',
+            'Admin',
+            true,
+            'active'
+        ]);
+        
+        res.json({
+            success: true,
+            message: 'Admin user created successfully',
+            email: 'admin@calldocker.com',
+            password: 'admin123',
+            userId: adminResult.rows[0].id
+        });
+        
+    } catch (error) {
+        console.error('Error creating admin user:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to create admin user',
+            error: error.message
+        });
+    }
+});
+
 // Admin login
 router.post('/login', (req, res) => {
     const { username, password } = req.body;

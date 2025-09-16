@@ -673,6 +673,11 @@ Critical Functions:
                 <i class="fas fa-globe mr-2"></i>
                 Test All TURN Servers
             </button>
+            
+            <button id="testXirsysApiBtn" class="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors flex items-center justify-center">
+                <i class="fas fa-cloud mr-2"></i>
+                Test Xirsys API
+            </button>
                 </div>
             </div>
         </div>
@@ -1030,6 +1035,40 @@ Critical Functions:
                 return turnServerHealthCache;
             }
 
+            // Function to fetch Xirsys TURN server credentials via API
+            async function fetchXirsysIceServers() {
+                try {
+                    console.log('🔍 Fetching Xirsys TURN server credentials...');
+                    
+                    const response = await fetch("https://global.xirsys.net/_turn/calldocker", {
+                        method: "PUT",
+                        headers: {
+                            "Authorization": "Basic " + btoa("mindfirmke:326c5e38-92e6-11f0-bfa5-0242ac130003"),
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({ format: "urls" })
+                    });
+                    
+                    console.log('📡 Xirsys API Response status:', response.status);
+                    
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error('❌ Xirsys API Error response:', errorText);
+                        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+                    }
+                    
+                    const data = await response.json();
+                    console.log('✅ Xirsys ICE data:', data);
+                    
+                    const iceServers = data.v?.iceServers || [];
+                    console.log('✅ Xirsys TURN credentials fetched successfully:', iceServers);
+                    return iceServers;
+                } catch (error) {
+                    console.error('❌ Failed to fetch Xirsys ICE servers:', error);
+                    return [];
+                }
+            }
+
             // Function to fetch Metered.ca TURN server credentials via API
             async function fetchMeteredTurnCredentials() {
                 try {
@@ -1190,7 +1229,7 @@ Critical Functions:
                 }
             }
 
-            // Function to get optimized ICE servers with Metered.ca priority
+            // Function to get optimized ICE servers with dynamic API fetching
             async function getOptimizedIceServers() {
                 const iceServers = [
                     // Always include reliable STUN servers first
@@ -1202,26 +1241,31 @@ Critical Functions:
                     { urls: 'stun:stun.cloudflare.com:3478' }
                 ];
 
-                // Add Xirsys TURN servers as primary (they're more reliable)
-                console.log('✅ Adding Xirsys TURN servers');
-                iceServers.push(...getXirsysTurnServers());
+                // Try to get Xirsys API credentials first (most reliable)
+                console.log('🔍 Attempting to fetch Xirsys TURN servers via API...');
+                const xirsysCredentials = await fetchXirsysIceServers();
+                if (xirsysCredentials && xirsysCredentials.length > 0) {
+                    console.log('✅ Adding Xirsys API TURN servers');
+                    iceServers.push(...xirsysCredentials);
+                } else {
+                    console.log('⚠️ Xirsys API failed, using static Xirsys servers');
+                    iceServers.push(...getXirsysTurnServers());
+                }
 
-                // Add alternative TURN servers as secondary
-                console.log('✅ Adding alternative TURN servers');
-                iceServers.push(...getAlternativeTurnServers());
-
-                // Add Metered.ca static servers as tertiary
-                console.log('✅ Adding Metered.ca static TURN servers');
-                iceServers.push(...getMeteredStaticServers());
-
-                // Try to get Metered.ca API credentials as additional servers
+                // Try to get Metered.ca API credentials as secondary
+                console.log('🔍 Attempting to fetch Metered.ca TURN servers via API...');
                 const meteredCredentials = await fetchMeteredTurnCredentials();
                 if (meteredCredentials && meteredCredentials.length > 0) {
                     console.log('✅ Adding Metered.ca API TURN servers');
                     iceServers.push(...meteredCredentials);
                 } else {
-                    console.log('⚠️ Metered.ca API failed, using static servers only');
+                    console.log('⚠️ Metered.ca API failed, using static servers');
+                    iceServers.push(...getMeteredStaticServers());
                 }
+
+                // Add alternative TURN servers as fallback
+                console.log('✅ Adding alternative TURN servers as fallback');
+                iceServers.push(...getAlternativeTurnServers());
 
                 // Add other working TURN servers as additional fallbacks
                 try {
@@ -1715,6 +1759,87 @@ Critical Functions:
                     } finally {
                         testAllTurnBtn.innerHTML = originalText;
                         testAllTurnBtn.disabled = false;
+                    }
+                });
+            }
+
+            // Test Xirsys API button
+            const testXirsysApiBtn = document.getElementById('testXirsysApiBtn');
+            if (testXirsysApiBtn) {
+                testXirsysApiBtn.addEventListener('click', async function() {
+                    const originalText = testXirsysApiBtn.innerHTML;
+                    testXirsysApiBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Testing Xirsys API...';
+                    testXirsysApiBtn.disabled = true;
+                    
+                    try {
+                        console.log('🧪 Testing Xirsys API connectivity...');
+                        
+                        const startTime = Date.now();
+                        const xirsysServers = await fetchXirsysIceServers();
+                        const endTime = Date.now();
+                        const responseTime = endTime - startTime;
+                        
+                        if (xirsysServers && xirsysServers.length > 0) {
+                            console.log('✅ Xirsys API test successful:', xirsysServers);
+                            
+                            // Test the servers with a WebRTC connection
+                            const testConnection = new RTCPeerConnection({
+                                iceServers: xirsysServers,
+                                iceCandidatePoolSize: 0
+                            });
+                            
+                            let hasRelayCandidate = false;
+                            let hasStunCandidate = false;
+                            let candidateCount = 0;
+                            
+                            testConnection.onicecandidate = (event) => {
+                                if (event.candidate) {
+                                    candidateCount++;
+                                    console.log('🔍 Xirsys API ICE candidate:', event.candidate.candidate);
+                                    if (event.candidate.candidate.includes('typ relay')) {
+                                        hasRelayCandidate = true;
+                                    } else if (event.candidate.candidate.includes('typ srflx')) {
+                                        hasStunCandidate = true;
+                                    }
+                                }
+                            };
+                            
+                            const offer = await testConnection.createOffer();
+                            await testConnection.setLocalDescription(offer);
+                            
+                            await new Promise((resolve) => {
+                                let timeoutId;
+                                testConnection.onicegatheringstatechange = () => {
+                                    if (testConnection.iceGatheringState === 'complete') {
+                                        clearTimeout(timeoutId);
+                                        resolve();
+                                    }
+                                };
+                                timeoutId = setTimeout(resolve, 10000);
+                            });
+                            
+                            testConnection.close();
+                            
+                            alert(`✅ Xirsys API Test Results:\n\n` +
+                                  `• API Response Time: ${responseTime}ms\n` +
+                                  `• Servers Retrieved: ${xirsysServers.length}\n` +
+                                  `• ICE Candidates: ${candidateCount}\n` +
+                                  `• TURN Relay: ${hasRelayCandidate ? 'Working' : 'Failed'}\n` +
+                                  `• STUN: ${hasStunCandidate ? 'Working' : 'Failed'}\n\n` +
+                                  `Xirsys API is working correctly!`);
+                        } else {
+                            alert(`❌ Xirsys API Test Results:\n\n` +
+                                  `• API Response Time: ${responseTime}ms\n` +
+                                  `• Servers Retrieved: 0\n` +
+                                  `• Error: No servers returned from API\n\n` +
+                                  `Xirsys API is not returning valid servers.`);
+                        }
+                    } catch (error) {
+                        console.error('Xirsys API test error:', error);
+                        alert('❌ Xirsys API test failed with error: ' + error.message);
+                    } finally {
+                        testXirsysApiBtn.innerHTML = originalText;
+                        testXirsysApiBtn.disabled = false;
                     }
                 });
             }

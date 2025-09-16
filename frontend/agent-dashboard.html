@@ -613,7 +613,7 @@ Critical Functions:
                     });
                     console.log('✅ Agent media access granted');
                     
-                    // Create WebRTC peer connection with enhanced Metered.ca TURN servers
+                    // Create WebRTC peer connection with enhanced TURN servers (Xirsys + Metered.ca)
                     peerConnection = new RTCPeerConnection({
                         iceServers: [
                             // STUN servers
@@ -624,6 +624,21 @@ Critical Functions:
                             { urls: 'stun:stun4.l.google.com:19302' },
                             { urls: 'stun:stun.cloudflare.com:3478' },
                             { urls: "stun:stun.relay.metered.ca:80" },
+                            
+                            // Xirsys TURN servers (primary)
+                            { urls: 'stun:jb-turn1.xirsys.com' },
+                            {
+                                username: 'WA8UHjXlU083XYyPRd9ut7mx4DZR0SgfjhY6Bkm_VoNtSN8LAKUBdV-1fhKUDqRvAAAAAGjJOhJtaW5kZmlybWtl',
+                                credential: 'db2dbf58-92e6-11f0-a38a-0242ac120004',
+                                urls: [
+                                    'turn:jb-turn1.xirsys.com:80?transport=udp',
+                                    'turn:jb-turn1.xirsys.com:3478?transport=udp',
+                                    'turn:jb-turn1.xirsys.com:80?transport=tcp',
+                                    'turn:jb-turn1.xirsys.com:3478?transport=tcp',
+                                    'turns:jb-turn1.xirsys.com:443?transport=tcp',
+                                    'turns:jb-turn1.xirsys.com:5349?transport=tcp'
+                                ]
+                            },
                             
                             // Metered.ca TURN servers with multiple protocols
                             {
@@ -810,7 +825,7 @@ Critical Functions:
                             });
                         }
                     };
-
+                    
                     // Handle connection state changes
                     peerConnection.onconnectionstatechange = () => {
                         console.log('🔗 Connection state changed:', peerConnection.connectionState);

@@ -659,10 +659,15 @@ Critical Functions:
                         Test All Servers
                     </button>
                     
-                    <button id="testRelayOnlyBtn" class="w-full bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 transition-colors flex items-center justify-center">
-                        <i class="fas fa-exchange-alt mr-2"></i>
-                        Test Relay-Only Mode
-                    </button>
+            <button id="testRelayOnlyBtn" class="w-full bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 transition-colors flex items-center justify-center">
+                <i class="fas fa-exchange-alt mr-2"></i>
+                Test Relay-Only Mode
+            </button>
+            
+            <button id="testXirsysBtn" class="w-full bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 transition-colors flex items-center justify-center">
+                <i class="fas fa-server mr-2"></i>
+                Test Xirsys TURN Server
+            </button>
                 </div>
             </div>
         </div>
@@ -813,6 +818,65 @@ Critical Functions:
                 lastChecked: 0,
                 cacheTimeout: 300000 // 5 minutes
             };
+
+            // Function to test Xirsys TURN server specifically
+            async function testXirsysTurnServer() {
+                console.log('🔍 Testing Xirsys TURN server connectivity...');
+                try {
+                    const xirsysServers = getXirsysTurnServers();
+                    const testConnection = new RTCPeerConnection({
+                        iceServers: xirsysServers,
+                        iceCandidatePoolSize: 0
+                    });
+                    
+                    let hasRelayCandidate = false;
+                    let hasStunCandidate = false;
+                    
+                    testConnection.onicecandidate = (event) => {
+                        if (event.candidate) {
+                            console.log('🔍 Xirsys ICE candidate:', event.candidate.candidate);
+                            if (event.candidate.candidate.includes('typ relay')) {
+                                hasRelayCandidate = true;
+                                console.log('✅ Xirsys TURN relay candidate found');
+                            } else if (event.candidate.candidate.includes('typ srflx')) {
+                                hasStunCandidate = true;
+                                console.log('✅ Xirsys STUN candidate found');
+                            }
+                        }
+                    };
+                    
+                    // Create a dummy offer to trigger ICE gathering
+                    const offer = await testConnection.createOffer();
+                    await testConnection.setLocalDescription(offer);
+                    
+                    // Wait for ICE gathering to complete
+                    await new Promise((resolve) => {
+                        testConnection.onicegatheringstatechange = () => {
+                            if (testConnection.iceGatheringState === 'complete') {
+                                resolve();
+                            }
+                        };
+                        // Timeout after 10 seconds
+                        setTimeout(resolve, 10000);
+                    });
+                    
+                    testConnection.close();
+                    
+                    if (hasRelayCandidate) {
+                        console.log('✅ Xirsys TURN server working - relay candidates available');
+                        return { working: true, hasRelay: true, hasStun: hasStunCandidate };
+                    } else if (hasStunCandidate) {
+                        console.log('⚠️ Xirsys STUN working but no TURN relay candidates');
+                        return { working: false, hasRelay: false, hasStun: true };
+                    } else {
+                        console.log('❌ Xirsys servers not responding');
+                        return { working: false, hasRelay: false, hasStun: false };
+                    }
+                } catch (error) {
+                    console.log('❌ Xirsys TURN server test failed:', error);
+                    return { working: false, hasRelay: false, hasStun: false, error: error.message };
+                }
+            }
 
             // Function to test individual TURN server
             async function testIndividualTurnServer(server) {
@@ -1005,6 +1069,28 @@ Critical Functions:
                 ];
             }
 
+            // Function to get Xirsys TURN servers
+            function getXirsysTurnServers() {
+                return [
+                    // Xirsys STUN server
+                    { urls: 'stun:jb-turn1.xirsys.com' },
+                    
+                    // Xirsys TURN servers with multiple protocols
+                    {
+                        username: 'WA8UHjXlU083XYyPRd9ut7mx4DZR0SgfjhY6Bkm_VoNtSN8LAKUBdV-1fhKUDqRvAAAAAGjJOhJtaW5kZmlybWtl',
+                        credential: 'db2dbf58-92e6-11f0-a38a-0242ac120004',
+                        urls: [
+                            'turn:jb-turn1.xirsys.com:80?transport=udp',
+                            'turn:jb-turn1.xirsys.com:3478?transport=udp',
+                            'turn:jb-turn1.xirsys.com:80?transport=tcp',
+                            'turn:jb-turn1.xirsys.com:3478?transport=tcp',
+                            'turns:jb-turn1.xirsys.com:443?transport=tcp',
+                            'turns:jb-turn1.xirsys.com:5349?transport=tcp'
+                        ]
+                    }
+                ];
+            }
+
             // Function to get optimized ICE servers with Metered.ca priority
             async function getOptimizedIceServers() {
                 const iceServers = [
@@ -1017,8 +1103,12 @@ Critical Functions:
                     { urls: 'stun:stun.cloudflare.com:3478' }
                 ];
 
-                // Always use Metered.ca static servers as primary TURN servers
-                console.log('✅ Using Metered.ca static TURN servers');
+                // Add Xirsys TURN servers as primary (they're more reliable)
+                console.log('✅ Adding Xirsys TURN servers');
+                iceServers.push(...getXirsysTurnServers());
+
+                // Add Metered.ca static servers as secondary
+                console.log('✅ Adding Metered.ca static TURN servers');
                 iceServers.push(...getMeteredStaticServers());
 
                 // Try to get Metered.ca API credentials as additional servers
@@ -1403,6 +1493,40 @@ Critical Functions:
                     } finally {
                         testRelayOnlyBtn.innerHTML = originalText;
                         testRelayOnlyBtn.disabled = false;
+                    }
+                });
+            }
+
+            // Test Xirsys TURN Server button
+            const testXirsysBtn = document.getElementById('testXirsysBtn');
+            if (testXirsysBtn) {
+                testXirsysBtn.addEventListener('click', async function() {
+                    const originalText = testXirsysBtn.innerHTML;
+                    testXirsysBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Testing Xirsys...';
+                    testXirsysBtn.disabled = true;
+                    
+                    try {
+                        console.log('🧪 Testing Xirsys TURN server...');
+                        const result = await testXirsysTurnServer();
+                        
+                        if (result.working) {
+                            alert(`✅ Xirsys TURN Server Test Results:\n\n` +
+                                  `• TURN Relay: ${result.hasRelay ? 'Working' : 'Failed'}\n` +
+                                  `• STUN: ${result.hasStun ? 'Working' : 'Failed'}\n\n` +
+                                  `Xirsys TURN servers are working correctly!`);
+                        } else {
+                            alert(`❌ Xirsys TURN Server Test Results:\n\n` +
+                                  `• TURN Relay: ${result.hasRelay ? 'Working' : 'Failed'}\n` +
+                                  `• STUN: ${result.hasStun ? 'Working' : 'Failed'}\n` +
+                                  `• Error: ${result.error || 'Unknown'}\n\n` +
+                                  `Xirsys TURN servers are not responding. Check network connectivity.`);
+                        }
+                    } catch (error) {
+                        console.error('Xirsys test error:', error);
+                        alert('❌ Xirsys test failed with error: ' + error.message);
+                    } finally {
+                        testXirsysBtn.innerHTML = originalText;
+                        testXirsysBtn.disabled = false;
                     }
                 });
             }

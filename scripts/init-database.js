@@ -1,6 +1,7 @@
 const databaseManager = require('../database/config');
 const fs = require('fs');
 const path = require('path');
+const bcrypt = require('bcryptjs');
 
 // Function to properly split SQL statements, handling functions and DO blocks
 function splitSqlStatements(sql) {
@@ -96,6 +97,73 @@ function splitSqlStatements(sql) {
     return statements.filter(stmt => stmt.length > 0);
 }
 
+async function createAdminUser() {
+    try {
+        console.log('👤 Creating admin user...');
+        
+        // Check if admin user already exists
+        const existingAdmin = await databaseManager.query(
+            'SELECT id FROM users WHERE email = $1',
+            ['admin@calldocker.com']
+        );
+        
+        if (existingAdmin.rows.length > 0) {
+            console.log('ℹ️ Admin user already exists, skipping creation');
+            return;
+        }
+        
+        // Create default company first
+        const companyResult = await databaseManager.query(`
+            INSERT INTO companies (name, uuid, status, settings, created_at, updated_at)
+            VALUES ('CallDocker Global', 'calldocker', 'active', '{}', NOW(), NOW())
+            ON CONFLICT (uuid) DO NOTHING
+            RETURNING id
+        `);
+        
+        let companyId;
+        if (companyResult.rows.length > 0) {
+            companyId = companyResult.rows[0].id;
+            console.log('✅ Default company created');
+        } else {
+            // Get existing company ID
+            const existingCompany = await databaseManager.query(
+                'SELECT id FROM companies WHERE uuid = $1',
+                ['calldocker']
+            );
+            companyId = existingCompany.rows[0].id;
+            console.log('ℹ️ Using existing company');
+        }
+        
+        // Hash the admin password
+        const passwordHash = await bcrypt.hash('admin123', 12);
+        
+        // Create admin user
+        const adminResult = await databaseManager.query(`
+            INSERT INTO users (email, password_hash, role, company_id, first_name, last_name, is_active, status, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
+            RETURNING id, email, role
+        `, [
+            'admin@calldocker.com',
+            passwordHash,
+            'super_admin',
+            companyId,
+            'Super',
+            'Admin',
+            true,
+            'active'
+        ]);
+        
+        console.log('✅ Admin user created successfully!');
+        console.log(`📧 Email: admin@calldocker.com`);
+        console.log(`🔑 Password: admin123`);
+        console.log(`🆔 User ID: ${adminResult.rows[0].id}`);
+        
+    } catch (error) {
+        console.error('❌ Failed to create admin user:', error);
+        throw error;
+    }
+}
+
 async function initializeDatabase() {
     try {
         console.log('🗄️ Initializing database schema...');
@@ -158,6 +226,9 @@ async function initializeDatabase() {
         }
         
         console.log('✅ Database initialization completed successfully!');
+        
+        // Create admin user
+        await createAdminUser();
         
         // Test the tables exist
         const tables = await databaseManager.query(`

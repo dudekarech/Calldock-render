@@ -651,6 +651,14 @@ Critical Functions:
                             console.log('🔍 Audio track enabled:', audioTracks[0].enabled);
                             console.log('🔍 Audio track muted:', audioTracks[0].muted);
                             console.log('🔍 Audio track readyState:', audioTracks[0].readyState);
+                            
+                            // CRITICAL: Unmute the audio track if it's muted
+                            if (audioTracks[0].muted) {
+                                console.log('🔧 Unmuting audio track...');
+                                audioTracks[0].enabled = true;
+                                // Note: muted property is read-only, but enabled controls playback
+                                console.log('✅ Audio track enabled:', audioTracks[0].enabled);
+                            }
                         }
                         
                         // Handle remote audio with enhanced configuration

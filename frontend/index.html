@@ -1221,12 +1221,22 @@ Critical Functions:
                         ],
                         username: 'mindfirm',
                         credential: 'superSecret123'
+                    },
+                    // Fallback TURN servers in case primary fails
+                    {
+                        urls: [
+                            'turn:openrelay.metered.ca:80',
+                            'turn:openrelay.metered.ca:443'
+                        ],
+                        username: 'openrelayproject',
+                        credential: 'openrelayproject'
                     }
                 ];
                 
                 console.log('🔍 TURN-only ICE servers configuration:', iceServers.length, 'servers');
                 console.log('🔍 Using TURN-only mode for guaranteed 2-way audio across NATs/firewalls');
-                console.log('🔍 All media will be relayed through TURN server: 102.68.86.104:3478');
+                console.log('🔍 Primary TURN server: 102.68.86.104:3478');
+                console.log('🔍 Fallback TURN servers: openrelay.metered.ca');
                 return iceServers;
             }
 
@@ -1782,6 +1792,14 @@ Critical Functions:
                         
                         if (audioTracks.length > 0) {
                             console.log('🔍 Audio track details:', audioTracks[0].label, audioTracks[0].enabled, audioTracks[0].muted);
+                            
+                            // CRITICAL: Unmute the audio track if it's muted
+                            if (audioTracks[0].muted) {
+                                console.log('🔧 Unmuting audio track...');
+                                audioTracks[0].enabled = true;
+                                // Note: muted property is read-only, but enabled controls playback
+                                console.log('✅ Audio track enabled:', audioTracks[0].enabled);
+                            }
                         }
                         
                         // Handle remote audio with enhanced configuration
@@ -1803,7 +1821,7 @@ Critical Functions:
                         remoteAudio.addEventListener('playing', () => console.log('🔍 Audio playing'));
                         remoteAudio.addEventListener('error', (e) => console.error('🔍 Audio error:', e));
                         
-                        // Attempt to play with retry mechanism
+                        // Attempt to play with retry mechanism and enhanced configuration
                         let playAttempts = 0;
                         const maxPlayAttempts = 5;
                         
@@ -1811,8 +1829,30 @@ Critical Functions:
                             playAttempts++;
                             console.log(`🔍 Attempting to play audio (attempt ${playAttempts}/${maxPlayAttempts})`);
                             
+                            // Ensure audio element is properly configured
+                            remoteAudio.muted = false;
+                            remoteAudio.volume = 1.0;
+                            remoteAudio.autoplay = true;
+                            remoteAudio.playsInline = true;
+                            
+                            // Force load the audio
+                            remoteAudio.load();
+                            
                             remoteAudio.play().then(() => {
                                 console.log('✅ Audio playback started successfully');
+                                
+                                // Verify audio is actually playing
+                                setTimeout(() => {
+                                    if (remoteAudio.paused) {
+                                        console.warn('⚠️ Audio element is paused after play() success');
+                                        if (playAttempts < maxPlayAttempts) {
+                                            console.log(`🔄 Retrying audio play in 1 second...`);
+                                            setTimeout(attemptPlay, 1000);
+                                        }
+                                    } else {
+                                        console.log('✅ Audio is confirmed playing');
+                                    }
+                                }, 500);
                             }).catch(e => {
                                 console.error(`❌ Audio play attempt ${playAttempts} failed:`, e);
                                 
@@ -1936,8 +1976,19 @@ Critical Functions:
                                 showFloatingWidget();
                                 updateFloatingWidgetCallerName('Agent');
                             }
-                        } else if (peerConnection.connectionState === 'failed' || peerConnection.connectionState === 'disconnected') {
-                            console.log('WebRTC connection failed or disconnected');
+                        } else if (peerConnection.connectionState === 'failed') {
+                            console.log('❌ WebRTC connection failed');
+                            
+                            // Track connection failures
+                            window.connectionFailureCount = (window.connectionFailureCount || 0) + 1;
+                            console.log('🔍 Connection failure count:', window.connectionFailureCount);
+                            
+                            // Don't attempt recovery after multiple failures
+                            if (window.connectionFailureCount > 3) {
+                                console.log('❌ Too many connection failures, giving up');
+                                updateCallStatus('Call Failed', 'Unable to establish connection');
+                                return;
+                            }
                             
                             // Only attempt recovery once to prevent loops
                             if (isInCall && !peerConnection.recoveryAttempted) {

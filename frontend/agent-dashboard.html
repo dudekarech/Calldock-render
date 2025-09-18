@@ -643,22 +643,100 @@ Critical Functions:
                         console.log('📞 Received remote stream from caller:', event.streams[0]);
                         remoteStream = event.streams[0];
                         
-                        // Handle remote audio
+                        // Validate audio tracks in the stream
+                        const audioTracks = remoteStream.getAudioTracks();
+                        console.log('🔍 Audio tracks in remote stream:', audioTracks.length);
+                        if (audioTracks.length > 0) {
+                            console.log('🔍 First audio track:', audioTracks[0]);
+                            console.log('🔍 Audio track enabled:', audioTracks[0].enabled);
+                            console.log('🔍 Audio track muted:', audioTracks[0].muted);
+                            console.log('🔍 Audio track readyState:', audioTracks[0].readyState);
+                        }
+                        
+                        // Handle remote audio with enhanced configuration
                         const remoteAudio = document.createElement('audio');
                         remoteAudio.id = 'remoteAudio';
                         remoteAudio.srcObject = remoteStream;
                         remoteAudio.autoplay = true;
+                        remoteAudio.playsInline = true; // Important for mobile
                         remoteAudio.volume = 1.0;
                         remoteAudio.muted = false;
                         remoteAudio.controls = false;
                         
-                        // Force play to overcome autoplay restrictions
-                        remoteAudio.play().catch(e => {
-                            console.log('⚠️ Audio autoplay blocked, user must interact first');
+                        // Add comprehensive audio event listeners
+                        remoteAudio.addEventListener('loadstart', () => {
+                            console.log('🔍 Audio loadstart event');
+                        });
+                        
+                        remoteAudio.addEventListener('loadeddata', () => {
+                            console.log('🔍 Audio loadeddata event');
+                        });
+                        
+                        remoteAudio.addEventListener('canplay', () => {
+                            console.log('🔍 Audio canplay event');
+                        });
+                        
+                        remoteAudio.addEventListener('play', () => {
+                            console.log('✅ Audio play event - audio is now playing');
+                        });
+                        
+                        remoteAudio.addEventListener('pause', () => {
+                            console.log('⚠️ Audio pause event - audio was paused');
+                        });
+                        
+                        remoteAudio.addEventListener('ended', () => {
+                            console.log('🔍 Audio ended event');
+                        });
+                        
+                        remoteAudio.addEventListener('error', (e) => {
+                            console.error('❌ Audio error event:', e);
+                        });
+                        
+                        remoteAudio.addEventListener('stalled', () => {
+                            console.warn('⚠️ Audio stalled event');
+                        });
+                        
+                        remoteAudio.addEventListener('suspend', () => {
+                            console.warn('⚠️ Audio suspend event');
+                        });
+                        
+                        remoteAudio.addEventListener('waiting', () => {
+                            console.warn('⚠️ Audio waiting event');
+                        });
+                        
+                        remoteAudio.addEventListener('volumechange', () => {
+                            console.log('🔍 Audio volume changed:', remoteAudio.volume, 'muted:', remoteAudio.muted);
                         });
                         
                         document.body.appendChild(remoteAudio);
-                        console.log('✅ Remote audio element created and playing');
+                        console.log('✅ Remote audio element created and configured');
+                        
+                        // Attempt to play with retry mechanism
+                        let playAttempts = 0;
+                        const maxPlayAttempts = 5;
+                        
+                        const attemptPlay = () => {
+                            playAttempts++;
+                            console.log(`🔍 Attempting to play audio (attempt ${playAttempts}/${maxPlayAttempts})`);
+                            
+                            remoteAudio.play().then(() => {
+                                console.log('✅ Audio playback started successfully');
+                            }).catch(e => {
+                                console.error(`❌ Audio play attempt ${playAttempts} failed:`, e);
+                                
+                                if (playAttempts < maxPlayAttempts) {
+                                    console.log(`🔄 Retrying audio play in 1 second...`);
+                                    setTimeout(attemptPlay, 1000);
+                                } else {
+                                    console.error('❌ Max audio play attempts reached');
+                                    // Show user interaction prompt
+                                    showAudioEnablePrompt();
+                                }
+                            });
+                        };
+                        
+                        // Start playing
+                        attemptPlay();
                         
                         // Handle remote video for video calls
                         if (callType === 'video') {
@@ -825,6 +903,85 @@ Critical Functions:
                     alert('Could not access microphone/camera. Please check permissions.');
                 }
             }
+            
+            // Audio enable prompt function
+            function showAudioEnablePrompt() {
+                const existingPrompt = document.getElementById('audio-enable-prompt');
+                if (existingPrompt) return;
+
+                const promptDiv = document.createElement('div');
+                promptDiv.id = 'audio-enable-prompt';
+                promptDiv.style.cssText = `
+                    position: fixed;
+                    bottom: 20px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    background-color: #ef4444;
+                    color: white;
+                    padding: 12px 20px;
+                    border-radius: 8px;
+                    font-family: sans-serif;
+                    font-size: 14px;
+                    cursor: pointer;
+                    z-index: 9999;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                    animation: fadeInOut 10s ease-in-out infinite;
+                `;
+                promptDiv.innerHTML = `
+                    Click here to enable audio <i class="fas fa-volume-up ml-2"></i>
+                `;
+                promptDiv.onclick = () => {
+                    const remoteAudio = document.getElementById('remoteAudio');
+                    if (remoteAudio) {
+                        remoteAudio.muted = false;
+                        remoteAudio.volume = 1.0;
+                        remoteAudio.play().then(() => {
+                            console.log('✅ Audio enabled by user interaction');
+                            promptDiv.remove();
+                        }).catch(e => {
+                            console.error('❌ Audio still failed after user interaction:', e);
+                        });
+                    }
+                };
+
+                document.body.appendChild(promptDiv);
+
+                const style = document.createElement('style');
+                style.innerHTML = `
+                    @keyframes fadeInOut {
+                        0%, 100% { opacity: 0.8; }
+                        50% { opacity: 1; }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            // Audio monitoring function
+            window.monitorAudio = function() {
+                const remoteAudio = document.getElementById('remoteAudio');
+                if (remoteAudio && remoteAudio.srcObject) {
+                    console.log('🔍 Audio monitoring:');
+                    console.log('🔍 - Audio element exists:', !!remoteAudio);
+                    console.log('🔍 - Audio srcObject exists:', !!remoteAudio.srcObject);
+                    console.log('🔍 - Audio paused:', remoteAudio.paused);
+                    console.log('🔍 - Audio muted:', remoteAudio.muted);
+                    console.log('🔍 - Audio volume:', remoteAudio.volume);
+                    console.log('🔍 - Audio readyState:', remoteAudio.readyState);
+                    console.log('🔍 - Audio currentTime:', remoteAudio.currentTime);
+                    console.log('🔍 - Audio duration:', remoteAudio.duration);
+                    
+                    // Check if there are audio tracks
+                    const audioTracks = remoteAudio.srcObject.getAudioTracks();
+                    console.log('🔍 - Audio tracks count:', audioTracks.length);
+                    if (audioTracks.length > 0) {
+                        console.log('🔍 - First audio track enabled:', audioTracks[0].enabled);
+                        console.log('🔍 - First audio track muted:', audioTracks[0].muted);
+                        console.log('🔍 - First audio track readyState:', audioTracks[0].readyState);
+                    }
+                } else {
+                    console.log('❌ No remote audio element or stream found');
+                }
+            };
             
             function updateCurrentCallSection(callId, callerName, callType) {
                 const currentCallInfo = document.getElementById('currentCallInfo');

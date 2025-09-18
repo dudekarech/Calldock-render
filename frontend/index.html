@@ -32,6 +32,9 @@ Critical Functions:
     <!-- Enhanced Widget Styles -->
     <link rel="stylesheet" href="css/widget-styles.css">
     
+    <!-- Audio Fix Script -->
+    <script src="js/audio-fix.js"></script>
+    
     <!-- Custom Styles -->
     <style>
         .gradient-bg {
@@ -1788,20 +1791,21 @@ Critical Functions:
                     const optimizedIceServers = await getOptimizedIceServers();
                     console.log('🔍 Using optimized ICE servers:', optimizedIceServers.length, 'servers');
                     
-                    // Create WebRTC peer connection with Render-optimized configuration
+                    // Create WebRTC peer connection with optimized configuration
                     peerConnection = new RTCPeerConnection({
                         iceServers: optimizedIceServers,
-                        iceCandidatePoolSize: 30,
-                        iceTransportPolicy: 'all', // Allow all transport types
+                        iceCandidatePoolSize: 10, // Reduced for better performance
+                        iceTransportPolicy: 'all',
                         bundlePolicy: 'max-bundle',
                         rtcpMuxPolicy: 'require',
-                        // Enhanced TURN server configuration
-                        iceCandidateTimeout: 15000, // 15 seconds timeout for TURN
-                        iceGatheringTimeout: 20000, // 20 seconds for gathering
-                        // Additional optimizations for TURN connectivity
+                        // Optimized ICE configuration for better connectivity
+                        iceCandidateTimeout: 30000, // Increased timeout
+                        iceGatheringTimeout: 30000, // Increased timeout
                         sdpSemantics: 'unified-plan',
-                        // Force ICE gathering to be more aggressive
-                        iceGatheringState: 'gathering'
+                        // ICE restart configuration
+                        iceRestart: true,
+                        // Connection timeout
+                        connectionTimeout: 30000
                     });
                     // Make peerConnection globally accessible
                     window.peerConnection = peerConnection;

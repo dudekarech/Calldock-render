@@ -1196,6 +1196,16 @@
                             { urls: 'stun:stun.voipstunt.com' },
                             { urls: 'stun:stun.counterpath.com' },
                             { urls: 'stun:stun.1und1.de' },
+                            // Primary TURN server - Custom TURN server with credentials
+                            {
+                                urls: [
+                                    'stun:102.68.86.104:3478',
+                                    'turn:102.68.86.104:3478?transport=udp',
+                                    'turn:102.68.86.104:3478?transport=tcp'
+                                ],
+                                username: 'mindfirm',
+                                credential: 'superSecret123'
+                            },
                             // TURN servers for NAT traversal (free public TURN servers)
                             {
                                 urls: 'turn:openrelay.metered.ca:80',

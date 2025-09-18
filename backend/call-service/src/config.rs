@@ -72,6 +72,15 @@ impl Config {
                         username: None,
                         credential: None,
                     },
+                    IceServerConfig {
+                        urls: vec![
+                            "stun:102.68.86.104:3478".to_string(),
+                            "turn:102.68.86.104:3478?transport=udp".to_string(),
+                            "turn:102.68.86.104:3478?transport=tcp".to_string(),
+                        ],
+                        username: Some("mindfirm".to_string()),
+                        credential: Some("superSecret123".to_string()),
+                    },
                 ],
                 max_connections: env::var("WEBRTC_MAX_CONNECTIONS")
                     .unwrap_or_else(|_| "1000".to_string())

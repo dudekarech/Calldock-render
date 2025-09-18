@@ -1,0 +1,54 @@
+<svg width="200" height="80" viewBox="0 0 200 80" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="40" cy="40" r="35" fill="url(#blueGradient)" stroke="#1e40af" stroke-width="3"/>
+  
+  <!-- Gradient definitions -->
+  <defs>
+    <linearGradient id="blueGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#1e40af;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1e3a8a;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="yellowGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#fbbf24;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f59e0b;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Robot body (blue) -->
+  <ellipse cx="40" cy="45" rx="12" ry="8" fill="#3b82f6"/>
+  
+  <!-- Robot head (blue) -->
+  <circle cx="40" cy="32" r="8" fill="#3b82f6"/>
+  
+  <!-- Robot face (yellow) -->
+  <circle cx="40" cy="32" r="6" fill="url(#yellowGradient)"/>
+  
+  <!-- Robot eyes -->
+  <circle cx="37" cy="30" r="1" fill="#1f2937"/>
+  <circle cx="43" cy="30" r="1" fill="#1f2937"/>
+  
+  <!-- Robot smile -->
+  <path d="M 36 34 Q 40 37 44 34" stroke="#1f2937" stroke-width="1" fill="none"/>
+  
+  <!-- Robot antenna -->
+  <line x1="40" y1="24" x2="40" y2="20" stroke="#fbbf24" stroke-width="2"/>
+  <circle cx="40" cy="19" r="2" fill="#fbbf24"/>
+  
+  <!-- Robot arms -->
+  <ellipse cx="28" cy="42" rx="4" ry="2" fill="#3b82f6" transform="rotate(-20 28 42)"/>
+  <ellipse cx="52" cy="42" rx="4" ry="2" fill="#3b82f6" transform="rotate(20 52 42)"/>
+  
+  <!-- Robot hand (waving) -->
+  <circle cx="52" cy="40" r="2" fill="#fbbf24"/>
+  
+  <!-- Telephone receiver -->
+  <ellipse cx="40" cy="55" rx="15" ry="8" fill="url(#yellowGradient)" stroke="#f59e0b" stroke-width="2"/>
+  <rect x="25" y="55" width="30" height="4" fill="#f59e0b" rx="2"/>
+  
+  <!-- Text: Call -->
+  <text x="90" y="35" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#fbbf24" stroke="#f59e0b" stroke-width="1">Call</text>
+  
+  <!-- Text: Docker -->
+  <text x="90" y="55" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#3b82f6" stroke="#1e40af" stroke-width="1">Docker</text>
+</svg>

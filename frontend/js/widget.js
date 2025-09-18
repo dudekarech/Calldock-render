@@ -90,7 +90,7 @@
                 position: relative;
                 overflow: hidden;
             ">
-                <i class="fas fa-phone"></i>
+                <img src="${CONFIG.apiUrl}/images/call-docker-logo-small.svg" alt="CallDocker" style="width: 32px; height: 32px;">
                 <div class="pulse-ring" style="
                     position: absolute;
                     top: 50%;
@@ -148,6 +148,9 @@
                     justify-content: center;
                     font-size: 14px;
                 ">×</button>
+                <div style="display: flex; justify-content: center; margin-bottom: 10px;">
+                    <img src="${CONFIG.apiUrl}/images/call-docker-logo-small.svg" alt="CallDocker Logo" style="height: 32px; width: auto;">
+                </div>
                 <h3 style="margin: 0; font-size: 18px; font-weight: 600;">CallDocker Support</h3>
                 <p style="margin: 5px 0 0 0; font-size: 14px; opacity: 0.9;">How can we help you today?</p>
             </div>

@@ -1,21 +1,4 @@
 <!DOCTYPE html>
-<!-- 
-================================================================================
-CHECKPOINT: 2-WAY AUDIO WORKING - DO NOT MODIFY CORE CALL FUNCTIONALITY
-================================================================================
-Date: 2025-08-30
-Status: ✅ WORKING - 2-way audio calls established successfully
-Critical Functions:
-- WebRTC peer connection creation
-- WebSocket message handlers (handleIncomingAnswer, handleIncomingICECandidate)
-- Global scope management for peerConnection
-- Call initiation and answer processing
-
-⚠️  WARNING: This file contains the core SaaS call functionality.
-    Any modifications to WebRTC or WebSocket handling must be tested
-    thoroughly to ensure audio calls continue working.
-================================================================================
--->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -24,16 +7,27 @@ Critical Functions:
     <meta name="description" content="Modern, scalable call center solution with WebRTC, IVR, and intelligent routing. Deploy in minutes with Docker.">
     
     <!-- Tailwind CSS -->
-    <link rel="stylesheet" href="/css/tailwind-output.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#eff6ff',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            900: '#1e3a8a'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Enhanced Widget Styles -->
-    <link rel="stylesheet" href="css/widget-styles.css">
-    
-    <!-- Audio Fix Script -->
-    <script src="js/audio-fix.js"></script>
     
     <!-- Custom Styles -->
     <style>
@@ -62,10 +56,9 @@ Critical Functions:
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <div class="flex items-center">
-                    <div class="flex-shrink-0 flex items-center">
-                        <img src="images/call-docker-logo.svg" alt="CallDocker Logo" class="h-10 w-auto mr-3">
+                    <div class="flex-shrink-0">
                         <h1 class="text-2xl font-bold text-primary-600">
-                            CallDocker
+                            <i class="fas fa-phone-alt mr-2"></i>CallDocker
                         </h1>
                     </div>
                 </div>
@@ -105,9 +98,6 @@ Critical Functions:
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
                 <div class="space-y-8">
-                    <div class="flex items-center justify-center lg:justify-start mb-4">
-                        <img src="images/call-docker-logo.svg" alt="CallDocker Logo" class="h-16 w-auto">
-                    </div>
                     <h1 class="text-5xl lg:text-6xl font-bold leading-tight">
                         Modern Call Center
                         <span class="block text-blue-200">Made Simple</span>
@@ -512,23 +502,23 @@ Critical Functions:
         </div>
     </div>
     
-    <!-- Enhanced Floating Call Widget -->
-    <div id="floatingCallWidget" class="floating-widget-enhanced widget-theme-default widget-size-standard fixed bottom-6 right-6 z-50 hidden">
+    <!-- Floating Call Widget -->
+    <div id="floatingCallWidget" class="fixed bottom-6 right-6 z-50 hidden">
         <!-- Mini Widget (Collapsed State) -->
-        <div id="miniWidget" class="mini-widget-enhanced cursor-move">
-            <div class="mini-widget-content">
-                <div class="mini-widget-avatar">
+        <div id="miniWidget" class="bg-white rounded-lg shadow-xl border border-gray-200 p-3 cursor-move">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
                     <i class="fas fa-phone text-white text-sm"></i>
                 </div>
-                <div class="mini-widget-info">
-                    <div class="mini-widget-name" id="miniCallerName">Agent</div>
-                    <div class="mini-widget-timer" id="miniCallTimer">00:00</div>
+                <div class="flex-1 min-w-0">
+                    <div class="text-sm font-medium text-gray-900 truncate" id="miniCallerName">Agent</div>
+                    <div class="text-xs text-gray-500" id="miniCallTimer">00:00</div>
                 </div>
-                <div class="mini-widget-actions">
-                    <button id="expandWidgetBtn" class="mini-widget-btn" title="Expand widget">
+                <div class="flex items-center space-x-1">
+                    <button id="expandWidgetBtn" class="text-gray-400 hover:text-gray-600 p-1">
                         <i class="fas fa-expand-arrows-alt text-xs"></i>
                     </button>
-                    <button id="endCallMiniBtn" class="mini-widget-btn end-call" title="End call">
+                    <button id="endCallMiniBtn" class="text-red-500 hover:text-red-700 p-1">
                         <i class="fas fa-phone-slash text-xs"></i>
                     </button>
                 </div>
@@ -536,57 +526,57 @@ Critical Functions:
         </div>
 
         <!-- Expanded Widget (Full State) -->
-        <div id="expandedWidget" class="expanded-widget-enhanced hidden">
+        <div id="expandedWidget" class="bg-white rounded-lg shadow-xl border border-gray-200 w-80 hidden">
             <!-- Header -->
-            <div class="expanded-widget-header" id="widgetHeader">
-                <div class="expanded-widget-header-content">
-                    <div class="expanded-widget-avatar">
+            <div class="flex items-center justify-between p-4 border-b border-gray-200 cursor-move" id="widgetHeader">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
                         <i class="fas fa-phone text-white"></i>
                     </div>
-                    <div class="expanded-widget-info">
-                        <h3 id="expandedCallerName">Agent</h3>
-                        <p id="expandedCallTimer">00:00</p>
+                    <div>
+                        <div class="font-medium text-gray-900" id="expandedCallerName">Agent</div>
+                        <div class="text-sm text-gray-500" id="expandedCallTimer">00:00</div>
                     </div>
                 </div>
-                <div class="expanded-widget-controls">
-                    <button id="minimizeWidgetBtn" class="expanded-widget-btn" title="Minimize widget">
+                <div class="flex items-center space-x-2">
+                    <button id="minimizeWidgetBtn" class="text-gray-400 hover:text-gray-600 p-1">
                         <i class="fas fa-compress-arrows-alt text-sm"></i>
                     </button>
-                    <button id="closeWidgetBtn" class="expanded-widget-btn" title="Close widget">
+                    <button id="closeWidgetBtn" class="text-gray-400 hover:text-gray-600 p-1">
                         <i class="fas fa-times text-sm"></i>
                     </button>
                 </div>
             </div>
 
             <!-- Video Area -->
-            <div class="expanded-widget-video-area" id="widgetVideoArea">
+            <div id="widgetVideoArea" class="p-4 space-y-3">
                 <!-- Local Video Preview -->
-                <div class="video-container" id="widgetLocalVideoContainer" style="display: none;">
-                    <p class="video-label">Your camera</p>
-                    <video id="widgetLocalVideo" class="video-element h-24" muted autoplay playsinline></video>
+                <div id="widgetLocalVideoContainer" class="hidden">
+                    <p class="text-xs text-gray-500 mb-1">Your camera</p>
+                    <video id="widgetLocalVideo" class="w-full h-24 object-cover rounded-lg border border-gray-300" muted autoplay playsinline></video>
                 </div>
                 
                 <!-- Remote Video Display -->
-                <div class="video-container" id="widgetRemoteVideoContainer" style="display: none;">
-                    <p class="video-label">Agent</p>
-                    <video id="widgetRemoteVideo" class="video-element h-32" autoplay playsinline></video>
+                <div id="widgetRemoteVideoContainer" class="hidden">
+                    <p class="text-xs text-gray-500 mb-1">Agent</p>
+                    <video id="widgetRemoteVideo" class="w-full h-32 object-cover rounded-lg border border-gray-300" autoplay playsinline></video>
                 </div>
             </div>
 
             <!-- Controls -->
-            <div class="expanded-widget-controls-area">
-                <div class="controls-grid">
-                    <button id="widgetMuteBtn" class="control-btn mute" title="Toggle mute">
-                        <i class="fas fa-microphone text-sm"></i>
+            <div class="p-4 border-t border-gray-200">
+                <div class="flex justify-center space-x-3">
+                    <button id="widgetMuteBtn" class="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors">
+                        <i class="fas fa-microphone text-gray-600 text-sm"></i>
                     </button>
-                    <button id="widgetVideoBtn" class="control-btn video" title="Toggle video" style="display: none;">
-                        <i class="fas fa-video text-sm"></i>
+                    <button id="widgetVideoBtn" class="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors hidden">
+                        <i class="fas fa-video text-gray-600 text-sm"></i>
                     </button>
-                    <button id="widgetScreenShareBtn" class="control-btn screen-share" title="Toggle screen share" style="display: none;">
-                        <i class="fas fa-desktop text-sm"></i>
+                    <button id="widgetScreenShareBtn" class="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors hidden">
+                        <i class="fas fa-desktop text-gray-600 text-sm"></i>
                     </button>
-                    <button id="widgetEndCallBtn" class="control-btn end-call" title="End call">
-                        <i class="fas fa-phone-slash text-sm"></i>
+                    <button id="widgetEndCallBtn" class="w-10 h-10 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center transition-colors">
+                        <i class="fas fa-phone-slash text-white text-sm"></i>
                     </button>
                 </div>
             </div>
@@ -655,7 +645,6 @@ Critical Functions:
                         <i class="fas fa-microphone mr-2"></i>
                         Test Audio
                     </button>
-                    
                 </div>
             </div>
         </div>
@@ -798,539 +787,6 @@ Critical Functions:
             let isWidgetExpanded = false;
             let isDragging = false;
             let dragOffset = { x: 0, y: 0 };
-            
-            // Global TURN server health cache
-            let turnServerHealthCache = {
-                workingServers: [],
-                failedServers: [],
-                lastChecked: 0,
-                cacheTimeout: 300000 // 5 minutes
-            };
-
-            // Function to test Xirsys TURN server specifically
-            async function testXirsysTurnServer() {
-                console.log('🔍 Testing Xirsys TURN server connectivity...');
-                try {
-                    const xirsysServers = getXirsysTurnServers();
-                    console.log('🔍 Xirsys servers configuration:', xirsysServers);
-                    
-                    const testConnection = new RTCPeerConnection({
-                        iceServers: xirsysServers,
-                        iceCandidatePoolSize: 0
-                    });
-                    
-                    let hasRelayCandidate = false;
-                    let hasStunCandidate = false;
-                    
-                    testConnection.onicecandidate = (event) => {
-                        if (event.candidate) {
-                            console.log('🔍 Xirsys ICE candidate:', event.candidate.candidate);
-                            if (event.candidate.candidate.includes('typ relay')) {
-                                hasRelayCandidate = true;
-                                console.log('✅ Xirsys TURN relay candidate found');
-                            } else if (event.candidate.candidate.includes('typ srflx')) {
-                                hasStunCandidate = true;
-                                console.log('✅ Xirsys STUN candidate found');
-                            }
-                        }
-                    };
-                    
-                    // Create a dummy offer to trigger ICE gathering
-                    const offer = await testConnection.createOffer();
-                    await testConnection.setLocalDescription(offer);
-                    
-                    // Wait for ICE gathering to complete
-                    await new Promise((resolve) => {
-                        let timeoutId;
-                        testConnection.onicegatheringstatechange = () => {
-                            console.log('🔍 Xirsys ICE gathering state:', testConnection.iceGatheringState);
-                            if (testConnection.iceGatheringState === 'complete') {
-                                clearTimeout(timeoutId);
-                                resolve();
-                            }
-                        };
-                        // Timeout after 15 seconds
-                        timeoutId = setTimeout(() => {
-                            console.log('⏰ Xirsys test timeout after 15 seconds');
-                            resolve();
-                        }, 15000);
-                    });
-                    
-                    testConnection.close();
-                    
-                    if (hasRelayCandidate) {
-                        console.log('✅ Xirsys TURN server working - relay candidates available');
-                        return { working: true, hasRelay: true, hasStun: hasStunCandidate };
-                    } else if (hasStunCandidate) {
-                        console.log('⚠️ Xirsys STUN working but no TURN relay candidates');
-                        return { working: false, hasRelay: false, hasStun: true };
-                    } else {
-                        console.log('❌ Xirsys servers not responding');
-                        return { working: false, hasRelay: false, hasStun: false };
-                    }
-                } catch (error) {
-                    console.log('❌ Xirsys TURN server test failed:', error);
-                    return { working: false, hasRelay: false, hasStun: false, error: error.message };
-                }
-            }
-
-            // Function to test individual TURN server
-            async function testIndividualTurnServer(server) {
-                return new Promise((resolve) => {
-                    const testConnection = new RTCPeerConnection({
-                        iceServers: [
-                            { urls: 'stun:stun.l.google.com:19302' },
-                            server
-                        ]
-                    });
-
-                    let hasTurnCandidate = false;
-                    let hasStunCandidate = false;
-                    let serverInfo = null;
-
-                    testConnection.onicecandidate = (event) => {
-                        if (event.candidate) {
-                            if (event.candidate.type === 'relay') {
-                                hasTurnCandidate = true;
-                                serverInfo = {
-                                    url: server.urls,
-                                    address: event.candidate.relatedAddress,
-                                    port: event.candidate.relatedPort,
-                                    protocol: event.candidate.protocol
-                                };
-                            } else if (event.candidate.type === 'srflx') {
-                                hasStunCandidate = true;
-                            }
-                        } else {
-                            testConnection.close();
-                            resolve({
-                                server: server,
-                                working: hasTurnCandidate,
-                                hasStun: hasStunCandidate,
-                                info: serverInfo
-                            });
-                        }
-                    };
-
-                    testConnection.createOffer().then(offer => {
-                        testConnection.setLocalDescription(offer);
-                    }).catch(e => {
-                        testConnection.close();
-                        resolve({
-                            server: server,
-                            working: false,
-                            hasStun: false,
-                            error: e.message
-                        });
-                    });
-
-                    // Timeout after 10 seconds per server
-                    setTimeout(() => {
-                        testConnection.close();
-                        resolve({
-                            server: server,
-                            working: hasTurnCandidate,
-                            hasStun: hasStunCandidate,
-                            info: serverInfo,
-                            timeout: true
-                        });
-                    }, 10000);
-                });
-            }
-
-            // Function to test all TURN servers and cache results
-            async function testAllTurnServers() {
-                const now = Date.now();
-                
-                // Return cached results if still valid
-                if (now - turnServerHealthCache.lastChecked < turnServerHealthCache.cacheTimeout) {
-                    console.log('🔍 Using cached TURN server health results');
-                    return turnServerHealthCache;
-                }
-
-                console.log('🔍 Testing all TURN servers for health...');
-                
-                const allTurnServers = [
-                    { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
-                    { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
-                    { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
-                    { urls: 'turn:freeturn.tel:3478', username: 'free', credential: 'free' },
-                    { urls: 'turn:freeturn.tel:3478?transport=tcp', username: 'free', credential: 'free' },
-                    { urls: 'turn:relay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
-                    { urls: 'turn:relay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
-                    { urls: 'turn:relay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
-                    { urls: 'turn:turn.bistri.com:80', username: 'homeo', credential: 'homeo' },
-                    { urls: 'turn:turn.bistri.com:443', username: 'homeo', credential: 'homeo' },
-                    { urls: 'turn:turn.bistri.com:80?transport=tcp', username: 'homeo', credential: 'homeo' },
-                    { urls: 'turn:turn.bistri.com:443?transport=tcp', username: 'homeo', credential: 'homeo' },
-                    { urls: 'turn:turn.anyfirewall.com:80', username: 'webrtc', credential: 'webrtc' },
-                    { urls: 'turn:turn.anyfirewall.com:443', username: 'webrtc', credential: 'webrtc' },
-                    { urls: 'turn:turn.anyfirewall.com:80?transport=tcp', username: 'webrtc', credential: 'webrtc' },
-                    { urls: 'turn:turn.anyfirewall.com:443?transport=tcp', username: 'webrtc', credential: 'webrtc' },
-                    { urls: 'turn:turn.ekiga.net', username: 'free', credential: 'free' },
-                    { urls: 'turn:turn.ekiga.net:3478', username: 'free', credential: 'free' },
-                    { urls: 'turn:turn.ekiga.net:3478?transport=tcp', username: 'free', credential: 'free' },
-                    { urls: 'turn:turn.ekiga.net:3478?transport=udp', username: 'free', credential: 'free' },
-                    { urls: 'turn:turn.anyfirewall.com:3478', username: 'webrtc', credential: 'webrtc' },
-                    { urls: 'turn:turn.anyfirewall.com:3478?transport=tcp', username: 'webrtc', credential: 'webrtc' },
-                    { urls: 'turn:turn.anyfirewall.com:3478?transport=udp', username: 'webrtc', credential: 'webrtc' }
-                ];
-
-                const results = await Promise.allSettled(
-                    allTurnServers.map(server => testIndividualTurnServer(server))
-                );
-
-                const workingServers = [];
-                const failedServers = [];
-
-                results.forEach((result, index) => {
-                    if (result.status === 'fulfilled' && result.value.working) {
-                        workingServers.push(result.value);
-                        console.log('✅ TURN server working:', result.value.server.urls);
-                    } else {
-                        failedServers.push({
-                            server: allTurnServers[index],
-                            error: result.status === 'rejected' ? result.reason : result.value.error
-                        });
-                        console.log('❌ TURN server failed:', allTurnServers[index].urls);
-                    }
-                });
-
-                // Update cache
-                turnServerHealthCache = {
-                    workingServers: workingServers,
-                    failedServers: failedServers,
-                    lastChecked: now,
-                    cacheTimeout: 300000
-                };
-
-                console.log('🔍 TURN server health check complete:', {
-                    working: workingServers.length,
-                    failed: failedServers.length,
-                    total: allTurnServers.length
-                });
-
-                return turnServerHealthCache;
-            }
-
-            // Function to fetch Xirsys TURN server credentials via API
-            async function fetchXirsysIceServers() {
-                try {
-                    console.log('🔍 Fetching Xirsys TURN server credentials...');
-                    
-                    const response = await fetch("https://global.xirsys.net/_turn/calldocker", {
-                        method: "PUT",
-                        headers: {
-                            "Authorization": "Basic " + btoa("mindfirmke:326c5e38-92e6-11f0-bfa5-0242ac130003"),
-                            "Content-Type": "application/json"
-                        },
-                        body: JSON.stringify({ format: "urls" })
-                    });
-                    
-                    console.log('📡 Xirsys API Response status:', response.status);
-                    
-                    if (!response.ok) {
-                        const errorText = await response.text();
-                        console.error('❌ Xirsys API Error response:', errorText);
-                        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
-                    }
-                    
-                    const data = await response.json();
-                    console.log('✅ Xirsys ICE data:', data);
-                    
-                    const iceServers = data.v?.iceServers || [];
-                    console.log('✅ Xirsys TURN credentials fetched successfully:', iceServers);
-                    return iceServers;
-                } catch (error) {
-                    console.error('❌ Failed to fetch Xirsys ICE servers:', error);
-                    return [];
-                }
-            }
-
-            // Function to fetch Metered.ca TURN server credentials via API
-            async function fetchMeteredTurnCredentials() {
-                try {
-                    console.log('🔍 Fetching Metered.ca TURN server credentials...');
-                    const response = await fetch('https://calldocker.metered.live/api/v1/turn/credentials?apiKey=fb4ffbb6046b00332d0bbc9f3b291bdf8e70');
-                    
-                    console.log('📡 API Response status:', response.status);
-                    console.log('📡 API Response headers:', response.headers);
-                    
-                    if (!response.ok) {
-                        const errorText = await response.text();
-                        console.error('❌ API Error response:', errorText);
-                        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
-                    }
-                    
-                    const credentials = await response.json();
-                    console.log('✅ Metered.ca TURN credentials fetched successfully:', credentials);
-                    return credentials;
-                } catch (error) {
-                    console.warn('⚠️ Failed to fetch Metered.ca credentials:', error.message);
-                    return null;
-                }
-            }
-
-            // Function to get Metered.ca static TURN servers as fallback
-            function getMeteredStaticServers() {
-                return [
-                    // STUN servers
-                    {
-                        urls: "stun:stun.l.google.com:19302",
-                    },
-                    {
-                        urls: "stun:stun1.l.google.com:19302",
-                    },
-                    {
-                        urls: "stun:stun2.l.google.com:19302",
-                    },
-                    {
-                        urls: "stun:stun3.l.google.com:19302",
-                    },
-                    {
-                        urls: "stun:stun4.l.google.com:19302",
-                    },
-                    {
-                        urls: "stun:stun.cloudflare.com:3478",
-                    },
-                    
-                    // Use only the API-provided TURN servers (they're working)
-                    // Don't use static credentials as they might be expired
-                ];
-            }
-
-            // Function to get Xirsys TURN servers
-            function getXirsysTurnServers() {
-                return [
-                    // Xirsys STUN server
-                    { urls: 'stun:jb-turn1.xirsys.com' },
-                    
-                    // Xirsys TURN servers with multiple protocols
-                    {
-                        username: 'WA8UHjXlU083XYyPRd9ut7mx4DZR0SgfjhY6Bkm_VoNtSN8LAKUBdV-1fhKUDqRvAAAAAGjJOhJtaW5kZmlybWtl',
-                        credential: 'db2dbf58-92e6-11f0-a38a-0242ac120004',
-                        urls: [
-                            'turn:jb-turn1.xirsys.com:80?transport=udp',
-                            'turn:jb-turn1.xirsys.com:3478?transport=udp',
-                            'turn:jb-turn1.xirsys.com:80?transport=tcp',
-                            'turn:jb-turn1.xirsys.com:3478?transport=tcp',
-                            'turns:jb-turn1.xirsys.com:443?transport=tcp',
-                            'turns:jb-turn1.xirsys.com:5349?transport=tcp'
-                        ]
-                    }
-                ];
-            }
-
-            // Function to get alternative TURN servers (Google, Twilio, etc.)
-            function getAlternativeTurnServers() {
-                return [
-                    // Google STUN servers
-                    { urls: 'stun:stun.l.google.com:19302' },
-                    { urls: 'stun:stun1.l.google.com:19302' },
-                    { urls: 'stun:stun2.l.google.com:19302' },
-                    { urls: 'stun:stun3.l.google.com:19302' },
-                    { urls: 'stun:stun4.l.google.com:19302' },
-                    
-                    // Cloudflare STUN
-                    { urls: 'stun:stun.cloudflare.com:3478' },
-                    
-                    // Additional free TURN servers
-                    {
-                        urls: 'turn:openrelay.metered.ca:80',
-                        username: 'openrelayproject',
-                        credential: 'openrelayproject'
-                    },
-                    {
-                        urls: 'turn:openrelay.metered.ca:443',
-                        username: 'openrelayproject',
-                        credential: 'openrelayproject'
-                    },
-                    {
-                        urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-                        username: 'openrelayproject',
-                        credential: 'openrelayproject'
-                    }
-                ];
-            }
-
-            // Function to test Xirsys STUN server only (simpler test)
-            async function testXirsysStunOnly() {
-                console.log('🔍 Testing Xirsys STUN server only...');
-                try {
-                    const testConnection = new RTCPeerConnection({
-                        iceServers: [{ urls: 'stun:jb-turn1.xirsys.com' }],
-                        iceCandidatePoolSize: 0
-                    });
-                    
-                    let hasStunCandidate = false;
-                    let candidateCount = 0;
-                    
-                    testConnection.onicecandidate = (event) => {
-                        if (event.candidate) {
-                            candidateCount++;
-                            console.log('🔍 Xirsys STUN candidate:', event.candidate.candidate);
-                            if (event.candidate.candidate.includes('typ srflx')) {
-                                hasStunCandidate = true;
-                                console.log('✅ Xirsys STUN candidate found');
-                            }
-                        }
-                    };
-                    
-                    // Create a dummy offer to trigger ICE gathering
-                    const offer = await testConnection.createOffer();
-                    await testConnection.setLocalDescription(offer);
-                    
-                    // Wait for ICE gathering to complete
-                    await new Promise((resolve) => {
-                        let timeoutId;
-                        testConnection.onicegatheringstatechange = () => {
-                            console.log('🔍 Xirsys STUN ICE gathering state:', testConnection.iceGatheringState);
-                            if (testConnection.iceGatheringState === 'complete') {
-                                clearTimeout(timeoutId);
-                                resolve();
-                            }
-                        };
-                        // Timeout after 10 seconds
-                        timeoutId = setTimeout(() => {
-                            console.log('⏰ Xirsys STUN test timeout after 10 seconds');
-                            resolve();
-                        }, 10000);
-                    });
-                    
-                    testConnection.close();
-                    
-                    console.log(`🔍 Xirsys STUN test results: ${candidateCount} candidates, STUN: ${hasStunCandidate}`);
-                    return { working: hasStunCandidate, candidateCount, hasStun: hasStunCandidate };
-                } catch (error) {
-                    console.log('❌ Xirsys STUN test failed:', error);
-                    return { working: false, candidateCount: 0, hasStun: false, error: error.message };
-                }
-            }
-
-            // TURN-only ICE servers configuration for guaranteed 2-way audio
-            async function getOptimizedIceServers() {
-                console.log('🔍 Using TURN-only configuration for guaranteed 2-way audio...');
-                
-                // TURN-only configuration - forces all traffic through reliable TURN server
-                // This ensures 2-way audio works across all NATs and firewalls
-                const iceServers = [
-                    {
-                        urls: [
-                            'turn:102.68.86.104:3478?transport=udp',
-                            'turn:102.68.86.104:3478?transport=tcp'
-                        ],
-                        username: 'mindfirm',
-                        credential: 'superSecret123'
-                    },
-                    // Fallback TURN servers in case primary fails
-                    {
-                        urls: [
-                            'turn:openrelay.metered.ca:80',
-                            'turn:openrelay.metered.ca:443'
-                        ],
-                        username: 'openrelayproject',
-                        credential: 'openrelayproject'
-                    }
-                ];
-                
-                console.log('🔍 TURN-only ICE servers configuration:', iceServers.length, 'servers');
-                console.log('🔍 Using TURN-only mode for guaranteed 2-way audio across NATs/firewalls');
-                console.log('🔍 Primary TURN server: 102.68.86.104:3478');
-                console.log('🔍 Fallback TURN servers: openrelay.metered.ca');
-                return iceServers;
-            }
-
-            // Function to start WebRTC stats monitoring for audio packet flow
-            function startWebRTCStatsMonitoring() {
-                if (window.statsInterval) {
-                    clearInterval(window.statsInterval);
-                }
-                
-                window.statsInterval = setInterval(async () => {
-                    if (peerConnection && peerConnection.connectionState === 'connected') {
-                        try {
-                            const stats = await peerConnection.getStats();
-                            let audioPacketsReceived = 0;
-                            let audioBytesReceived = 0;
-                            let audioPacketsSent = 0;
-                            let audioBytesSent = 0;
-                            
-                            stats.forEach(report => {
-                                if (report.type === 'inbound-rtp' && report.kind === 'audio') {
-                                    audioPacketsReceived = report.packetsReceived || 0;
-                                    audioBytesReceived = report.bytesReceived || 0;
-                                    console.log('🔍 Inbound audio stats:', {
-                                        packetsReceived: audioPacketsReceived,
-                                        bytesReceived: audioBytesReceived,
-                                        packetsLost: report.packetsLost || 0,
-                                        jitter: report.jitter || 0
-                                    });
-                                } else if (report.type === 'outbound-rtp' && report.kind === 'audio') {
-                                    audioPacketsSent = report.packetsSent || 0;
-                                    audioBytesSent = report.bytesSent || 0;
-                                    console.log('🔍 Outbound audio stats:', {
-                                        packetsSent: audioPacketsSent,
-                                        bytesSent: audioBytesSent,
-                                        packetsLost: report.packetsLost || 0
-                                    });
-                                }
-                            });
-                            
-                            if (audioPacketsReceived === 0 && audioBytesReceived === 0) {
-                                console.log('⚠️ No audio packets received - audio may not be flowing');
-                            } else {
-                                console.log('✅ Audio packets flowing:', {
-                                    received: audioPacketsReceived,
-                                    sent: audioPacketsSent
-                                });
-                            }
-                        } catch (error) {
-                            console.log('❌ Error getting WebRTC stats:', error);
-                        }
-                    }
-                }, 3000); // Check every 3 seconds
-            }
-
-            // Function to test TURN server connectivity with Metered.ca priority
-            async function testTurnServerConnectivity() {
-                console.log('🔍 Testing TURN server connectivity...');
-                
-                // Always use Metered.ca static servers as primary
-                const staticServers = getMeteredStaticServers();
-                const meteredServers = staticServers.map(s => s.urls);
-                console.log('✅ Using Metered.ca static TURN servers');
-                
-                // Try to get additional API credentials
-                const meteredCredentials = await fetchMeteredTurnCredentials();
-                let apiWorking = false;
-                let apiServers = [];
-                
-                if (meteredCredentials && meteredCredentials.length > 0) {
-                    console.log('✅ Metered.ca API credentials available');
-                    apiWorking = true;
-                    apiServers = meteredCredentials.map(s => s.urls);
-                } else {
-                    console.log('⚠️ Metered.ca API failed, using static servers only');
-                }
-                
-                // Test other TURN servers as additional fallbacks
-                const healthResults = await testAllTurnServers();
-                
-                const allWorkingServers = [...meteredServers, ...apiServers, ...healthResults.workingServers.map(s => s.server.urls)];
-                const uniqueWorkingServers = [...new Set(allWorkingServers)]; // Remove duplicates
-                
-                return {
-                    hasTurnCandidate: true, // Metered.ca static servers should work
-                    hasStunCandidate: true, // STUN servers are generally reliable
-                    turnServersWorking: uniqueWorkingServers,
-                    stunServersWorking: ['stun.l.google.com:19302', 'stun1.l.google.com:19302'],
-                    workingCount: uniqueWorkingServers.length,
-                    failedCount: healthResults.failedServers.length,
-                    totalCount: uniqueWorkingServers.length + healthResults.failedServers.length,
-                    meteredWorking: apiWorking,
-                    meteredServers: meteredServers
-                };
-            }
             
             // WebSocket connection for signaling (optional)
             // WebSocket client is now handled by WebSocketClient class
@@ -1497,12 +953,6 @@ Critical Functions:
                     startAudioTest();
                 }
             });
-
-
-
-
-
-
 
             // Cancel call
             cancelCallBtn.addEventListener('click', function() {
@@ -1675,25 +1125,6 @@ Critical Functions:
                 try {
                     console.log('Starting real WebRTC call...');
                     
-                    // Test TURN server connectivity first
-                    const turnTest = await testTurnServerConnectivity();
-                    if (!turnTest.hasTurnCandidate) {
-                        console.warn('⚠️ No TURN candidates available - connection may fail across different networks');
-                        console.log('🔍 STUN candidates available:', turnTest.hasStunCandidate);
-                        console.log('🔍 Working STUN servers:', turnTest.stunServersWorking);
-                        console.log('🔍 TURN server status:', turnTest.workingCount + '/' + turnTest.totalCount + ' working');
-                        
-                        // Show warning to user with more details
-                        updateCallStatus('Warning', `TURN servers not accessible (${turnTest.workingCount}/${turnTest.totalCount} working). Connection may fail across different networks.`);
-                    } else {
-                        console.log('✅ TURN server connectivity confirmed');
-                        console.log('🔍 Working TURN servers:', turnTest.turnServersWorking);
-                        console.log('🔍 TURN server status:', turnTest.workingCount + '/' + turnTest.totalCount + ' working');
-                        
-                        // Show success message
-                        updateCallStatus('Connecting...', `TURN servers working (${turnTest.workingCount}/${turnTest.totalCount}). Establishing connection...`);
-                    }
-                    
                     // Reset call state for new call
                     isInCall = false;
                     answerApplied = false;
@@ -1751,25 +1182,64 @@ Critical Functions:
                         }
                     }
 
-                    // Get optimized ICE servers based on health check
-                    const optimizedIceServers = await getOptimizedIceServers();
-                    console.log('🔍 Using optimized ICE servers:', optimizedIceServers.length, 'servers');
-                    
-                    // Create WebRTC peer connection with TURN-only configuration
+                    // Create WebRTC peer connection with enhanced ICE servers for external connectivity
                     peerConnection = new RTCPeerConnection({
-                        iceServers: optimizedIceServers,
-                        iceCandidatePoolSize: 10, // Reduced for better performance
-                        iceTransportPolicy: 'relay', // Force TURN-only mode for guaranteed connectivity
-                        bundlePolicy: 'max-bundle',
-                        rtcpMuxPolicy: 'require',
-                        // Optimized ICE configuration for better connectivity
-                        iceCandidateTimeout: 30000, // Increased timeout
-                        iceGatheringTimeout: 30000, // Increased timeout
-                        sdpSemantics: 'unified-plan',
-                        // ICE restart configuration
-                        iceRestart: true,
-                        // Connection timeout
-                        connectionTimeout: 30000
+                        iceServers: [
+                            // Google STUN servers
+                            { urls: 'stun:stun.l.google.com:19302' },
+                            { urls: 'stun:stun1.l.google.com:19302' },
+                            { urls: 'stun:stun2.l.google.com:19302' },
+                            // Additional STUN servers for better connectivity
+                            { urls: 'stun:stun.cloudflare.com:3478' },
+                            { urls: 'stun:stun.voiparound.com' },
+                            { urls: 'stun:stun.voipbuster.com' },
+                            { urls: 'stun:stun.voipstunt.com' },
+                            { urls: 'stun:stun.counterpath.com' },
+                            { urls: 'stun:stun.1und1.de' },
+                            // Primary TURN server - Custom TURN server with credentials
+                            {
+                                urls: [
+                                    'stun:102.68.86.104:3478',
+                                    'turn:102.68.86.104:3478?transport=udp',
+                                    'turn:102.68.86.104:3478?transport=tcp'
+                                ],
+                                username: 'mindfirm',
+                                credential: 'superSecret123'
+                            },
+                            // TURN servers for NAT traversal (free public TURN servers)
+                            {
+                                urls: 'turn:openrelay.metered.ca:80',
+                                username: 'openrelayproject',
+                                credential: 'openrelayproject'
+                            },
+                            {
+                                urls: 'turn:openrelay.metered.ca:443',
+                                username: 'openrelayproject',
+                                credential: 'openrelayproject'
+                            },
+                            {
+                                urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+                                username: 'openrelayproject',
+                                credential: 'openrelayproject'
+                            },
+                            // Additional TURN servers for better connectivity
+                            {
+                                urls: 'turn:relay.metered.ca:80',
+                                username: 'openrelayproject',
+                                credential: 'openrelayproject'
+                            },
+                            {
+                                urls: 'turn:relay.metered.ca:443',
+                                username: 'openrelayproject',
+                                credential: 'openrelayproject'
+                            },
+                            {
+                                urls: 'turn:relay.metered.ca:443?transport=tcp',
+                                username: 'openrelayproject',
+                                credential: 'openrelayproject'
+                            }
+                        ],
+                        iceCandidatePoolSize: 10
                     });
                     // Make peerConnection globally accessible
                     window.peerConnection = peerConnection;
@@ -1792,27 +1262,16 @@ Critical Functions:
                         
                         if (audioTracks.length > 0) {
                             console.log('🔍 Audio track details:', audioTracks[0].label, audioTracks[0].enabled, audioTracks[0].muted);
-                            
-                            // CRITICAL: Unmute the audio track if it's muted
-                            if (audioTracks[0].muted) {
-                                console.log('🔧 Unmuting audio track...');
-                                audioTracks[0].enabled = true;
-                                // Note: muted property is read-only, but enabled controls playback
-                                console.log('✅ Audio track enabled:', audioTracks[0].enabled);
-                            }
                         }
                         
-                        // Handle remote audio with enhanced configuration
+                        // Handle remote audio
                         const remoteAudio = document.createElement('audio');
                         remoteAudio.id = 'remoteAudio';
                         remoteAudio.srcObject = remoteStream;
                         remoteAudio.autoplay = true;
-                        remoteAudio.playsInline = true; // Important for mobile
                         remoteAudio.volume = 1.0;
                         remoteAudio.muted = false; // Ensure not muted
                         remoteAudio.controls = false; // Hide controls
-                        remoteAudio.loop = false;
-                        remoteAudio.preload = 'auto';
                         
                         // Add event listeners for debugging
                         remoteAudio.addEventListener('loadstart', () => console.log('🔍 Audio loadstart'));
@@ -1821,55 +1280,15 @@ Critical Functions:
                         remoteAudio.addEventListener('playing', () => console.log('🔍 Audio playing'));
                         remoteAudio.addEventListener('error', (e) => console.error('🔍 Audio error:', e));
                         
-                        // Attempt to play with retry mechanism and enhanced configuration
-                        let playAttempts = 0;
-                        const maxPlayAttempts = 5;
-                        
-                        const attemptPlay = () => {
-                            playAttempts++;
-                            console.log(`🔍 Attempting to play audio (attempt ${playAttempts}/${maxPlayAttempts})`);
-                            
-                            // Ensure audio element is properly configured
-                            remoteAudio.muted = false;
-                            remoteAudio.volume = 1.0;
-                            remoteAudio.autoplay = true;
-                            remoteAudio.playsInline = true;
-                            
-                            // Force load the audio
-                            remoteAudio.load();
-                            
-                            remoteAudio.play().then(() => {
-                                console.log('✅ Audio playback started successfully');
-                                
-                                // Verify audio is actually playing
-                                setTimeout(() => {
-                                    if (remoteAudio.paused) {
-                                        console.warn('⚠️ Audio element is paused after play() success');
-                                        if (playAttempts < maxPlayAttempts) {
-                                            console.log(`🔄 Retrying audio play in 1 second...`);
-                                            setTimeout(attemptPlay, 1000);
-                                        }
-                                    } else {
-                                        console.log('✅ Audio is confirmed playing');
-                                    }
-                                }, 500);
-                            }).catch(e => {
-                                console.error(`❌ Audio play attempt ${playAttempts} failed:`, e);
-                                
-                                if (playAttempts < maxPlayAttempts) {
-                                    console.log(`🔄 Retrying audio play in 1 second...`);
-                                    setTimeout(attemptPlay, 1000);
-                                } else {
-                                    console.error('❌ Max audio play attempts reached');
-                                    // Show user-friendly message with enable audio button
-                                    updateCallStatus('Audio Blocked', 'Click the button below to enable audio');
-                                    showEnableAudioButton();
-                                }
-                            });
-                        };
-                        
-                        // Start playing
-                        attemptPlay();
+                        // Force play to overcome autoplay restrictions
+                        remoteAudio.play().then(() => {
+                            console.log('✅ Remote audio playing successfully');
+                        }).catch(e => {
+                            console.warn('⚠️ Autoplay blocked, user must interact first:', e);
+                            // Show user-friendly message with enable audio button
+                            updateCallStatus('Audio Blocked', 'Click the button below to enable audio');
+                            showEnableAudioButton();
+                        });
                         
                         document.body.appendChild(remoteAudio);
                         
@@ -1904,58 +1323,25 @@ Critical Functions:
                         console.log('ontrack: Remote media ready, waiting for answer processing to complete');
                     };
 
-                    // Handle ICE candidates with enhanced debugging and connection monitoring
+                    // Handle ICE candidates
                     peerConnection.onicecandidate = (event) => {
                         if (event.candidate) {
                             console.log('ICE candidate generated:', event.candidate);
                             console.log('🔍 Candidate type:', event.candidate.type, 'protocol:', event.candidate.protocol, 'address:', event.candidate.address);
-                            
-                            // Track candidate types for connection quality monitoring
-                            if (!window.candidateTypes) {
-                                window.candidateTypes = { host: 0, srflx: 0, relay: 0 };
-                            }
-                            window.candidateTypes[event.candidate.type]++;
                             
                             // Log candidate priority for debugging
                             console.log('🔍 Candidate priority:', event.candidate.priority);
                             
                             // Check if this is a TURN candidate (relay)
                             if (event.candidate.type === 'relay') {
-                                console.log('✅ TURN candidate generated - NAT traversal guaranteed');
-                                console.log('🔍 TURN server:', event.candidate.relatedAddress, ':', event.candidate.relatedPort);
+                                console.log('✅ TURN candidate generated - NAT traversal should work');
                             } else if (event.candidate.type === 'srflx') {
-                                console.log('⚠️ STUN candidate generated - may not work across all NATs');
-                                console.log('🔍 Public IP:', event.candidate.address, ':', event.candidate.port);
+                                console.log('✅ STUN candidate generated - public IP discovered');
                             } else if (event.candidate.type === 'host') {
-                                console.log('⚠️ Host candidate generated - local network only (will not work across NATs)');
-                            }
-                            
-                            // Send ICE candidate to the other peer
-                            if (window.websocketClient && window.websocketClient.isConnected()) {
-                                window.websocketClient.sendMessage({
-                                    type: 'ice_candidate',
-                                    candidate: event.candidate,
-                                    callId: callId
-                                });
-                                console.log('📤 ICE candidate sent via WebSocket');
+                                console.log('🔍 Host candidate generated - local network');
                             }
                         } else {
                             console.log('✅ ICE gathering complete - no more candidates');
-                            
-                            // Log candidate type summary for TURN-only mode
-                            if (window.candidateTypes) {
-                                console.log('📊 Candidate type summary:', window.candidateTypes);
-                                console.log('🔍 TURN-only mode: Only relay candidates should be generated');
-                                if (window.candidateTypes.relay > 0) {
-                                    console.log('✅ TURN relay candidates generated - 2-way audio guaranteed');
-                                } else {
-                                    console.warn('❌ No TURN relay candidates - 2-way audio will fail');
-                                }
-                                if (window.candidateTypes.host > 0 || window.candidateTypes.srflx > 0) {
-                                    console.warn('⚠️ Non-relay candidates detected - TURN-only mode may not be working');
-                                }
-                            }
-                            console.log('🔍 Total candidates gathered:', peerConnection.localDescription ? 'Yes' : 'No');
                         }
                     };
 
@@ -1976,24 +1362,13 @@ Critical Functions:
                                 showFloatingWidget();
                                 updateFloatingWidgetCallerName('Agent');
                             }
-                        } else if (peerConnection.connectionState === 'failed') {
-                            console.log('❌ WebRTC connection failed');
+                        } else if (peerConnection.connectionState === 'failed' || peerConnection.connectionState === 'disconnected') {
+                            console.log('WebRTC connection failed or disconnected');
+                            console.log('🔍 Connection failed - attempting recovery...');
                             
-                            // Track connection failures
-                            window.connectionFailureCount = (window.connectionFailureCount || 0) + 1;
-                            console.log('🔍 Connection failure count:', window.connectionFailureCount);
-                            
-                            // Don't attempt recovery after multiple failures
-                            if (window.connectionFailureCount > 3) {
-                                console.log('❌ Too many connection failures, giving up');
-                                updateCallStatus('Call Failed', 'Unable to establish connection');
-                                return;
-                            }
-                            
-                            // Only attempt recovery once to prevent loops
-                            if (isInCall && !peerConnection.recoveryAttempted) {
-                                peerConnection.recoveryAttempted = true;
-                                console.log('🔍 Connection failed - attempting recovery...');
+                            // Don't immediately disconnect - try to recover
+                            if (isInCall) {
+                                console.log('🔍 Call was active, attempting connection recovery...');
                                 updateCallStatus('Connection Issue', 'Attempting to reconnect...');
                                 
                                 // Try to restart ICE gathering
@@ -2002,29 +1377,6 @@ Critical Functions:
                                         console.log('🔍 Attempting ICE restart...');
                                         try {
                                             peerConnection.restartIce();
-                                            
-                                            // Also try to create a new offer if ICE restart doesn't work
-                                            setTimeout(async () => {
-                                                if (peerConnection && peerConnection.connectionState === 'failed') {
-                                                    console.log('🔍 ICE restart failed, trying new offer...');
-                                                    try {
-                                                        const newOffer = await peerConnection.createOffer();
-                                                        await peerConnection.setLocalDescription(newOffer);
-                                                        
-                                                        // Send new offer via WebSocket
-                                                        if (window.websocketClient && window.websocketClient.isConnected()) {
-                                                            window.websocketClient.sendMessage({
-                                                                type: 'webrtc_offer',
-                                                                offer: newOffer,
-                                                                callId: callId
-                                                            });
-                                                            console.log('📤 New offer sent after ICE restart');
-                                                        }
-                                                    } catch (e) {
-                                                        console.log('🔍 New offer creation failed:', e);
-                                                    }
-                                                }
-                                            }, 3000);
                                         } catch (e) {
                                             console.log('🔍 ICE restart failed:', e);
                                         }
@@ -2035,7 +1387,7 @@ Critical Functions:
                                 setTimeout(() => {
                                     if (peerConnection && (peerConnection.connectionState === 'failed' || peerConnection.connectionState === 'disconnected')) {
                                         console.log('🔍 Connection recovery failed, disconnecting call');
-                            isInCall = false;
+                                        isInCall = false;
                                         updateCallStatus('Call Failed', 'Connection lost');
                                     }
                                 }, 10000); // Wait 10 seconds before giving up
@@ -2052,24 +1404,6 @@ Critical Functions:
                         // Handle ICE connection state changes
                         if (peerConnection.iceConnectionState === 'connected' || peerConnection.iceConnectionState === 'completed') {
                             console.log('✅ ICE connection established successfully!');
-                            console.log('🔍 ICE connection type:', peerConnection.iceConnectionState);
-                            
-                            // Log connection statistics
-                            peerConnection.getStats().then(stats => {
-                                stats.forEach(report => {
-                                    if (report.type === 'candidate-pair' && report.state === 'succeeded') {
-                                        console.log('🔍 Successful candidate pair:', {
-                                            localCandidate: report.localCandidateId,
-                                            remoteCandidate: report.remoteCandidateId,
-                                            priority: report.priority
-                                        });
-                                    }
-                                });
-                            });
-                            
-                            // Start WebRTC stats monitoring for audio packet flow
-                            startWebRTCStatsMonitoring();
-                            
                             // Ensure call state is set if not already set
                             if (!isInCall) {
                                 isInCall = true;
@@ -2080,25 +1414,7 @@ Critical Functions:
                             }
                         } else if (peerConnection.iceConnectionState === 'failed' || peerConnection.iceConnectionState === 'disconnected') {
                             console.log('❌ ICE connection failed or disconnected');
-                            console.log('🔍 ICE connection failed - checking if we can recover...');
-                            
-                            // Log detailed failure information
-                            peerConnection.getStats().then(stats => {
-                                console.log('🔍 ICE connection stats on failure:');
-                                stats.forEach(report => {
-                                    if (report.type === 'candidate-pair') {
-                                        console.log('🔍 Candidate pair:', {
-                                            state: report.state,
-                                            priority: report.priority,
-                                            localCandidate: report.localCandidateId,
-                                            remoteCandidate: report.remoteCandidateId
-                                        });
-                                    }
-                                });
-                            });
-                            
-                            // Don't immediately disconnect - let the connection state handler manage recovery
-                            // The connection state change handler will attempt recovery
+                            // Don't immediately set isInCall to false here as the connection state change handler will handle it
                         }
                         if (peerConnection.iceConnectionState === 'connected') {
                             console.log('ICE connection established - media should flow!');
@@ -2110,41 +1426,11 @@ Critical Functions:
                     // Monitor ICE gathering state
                     peerConnection.onicegatheringstatechange = (event) => {
                         console.log('ICE gathering state:', peerConnection.iceGatheringState);
-                        
-                        if (peerConnection.iceGatheringState === 'complete') {
-                            console.log('🔍 ICE gathering complete - checking for TURN candidates...');
-                            
-                            // Check if we have any TURN candidates
-                            peerConnection.getStats().then(stats => {
-                                let hasTurnCandidate = false;
-                                stats.forEach(report => {
-                                    if (report.type === 'local-candidate' && report.candidateType === 'relay') {
-                                        hasTurnCandidate = true;
-                                        console.log('✅ TURN candidate found:', report.url);
-                                    }
-                                });
-                                
-                                if (!hasTurnCandidate) {
-                                    console.warn('⚠️ No TURN candidates found - this may cause connection issues across different networks');
-                                    console.log('🔍 This could be due to:');
-                                    console.log('  - TURN servers being unreachable');
-                                    console.log('  - Firewall blocking TURN server ports');
-                                    console.log('  - Network restrictions');
-                                } else {
-                                    console.log('✅ TURN candidates available - NAT traversal should work');
-                                }
-                            });
-                        }
                     };
 
                     // Create offer
                     const offer = await peerConnection.createOffer();
                     await peerConnection.setLocalDescription(offer);
-                    
-                    // Debug SDP for codec information
-                    console.log('🔍 SDP Offer details:');
-                    console.log('🔍 Audio codecs in offer:', offer.sdp.match(/m=audio.*\r\n/g));
-                    console.log('🔍 RTP map lines:', offer.sdp.match(/a=rtpmap:.*\r\n/g));
 
                     // Generate unique call ID using crypto.randomUUID() for better uniqueness
                     callId = 'call_' + crypto.randomUUID();
@@ -2256,10 +1542,10 @@ Critical Functions:
                             <button id="videoBtn" class="px-4 py-2 bg-purple-600 text-white rounded-md text-sm font-medium hover:bg-purple-700">
                                 <i class="fas fa-video mr-2"></i>Video Off
                             </button>
-                            ` : ''}
                             <button id="screenShareBtn" class="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700">
                                 <i class="fas fa-desktop mr-2"></i>Share Screen
                             </button>
+                            ` : ''}
                             <button id="endCallBtn" class="px-4 py-2 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700">
                                 <i class="fas fa-phone-slash mr-2"></i>End Call
                             </button>
@@ -2271,8 +1557,8 @@ Critical Functions:
                     document.getElementById('muteBtn').addEventListener('click', toggleCallMute);
                     if (callType === 'video') {
                         document.getElementById('videoBtn').addEventListener('click', toggleCallVideo);
+                        document.getElementById('screenShareBtn').addEventListener('click', toggleScreenShare);
                     }
-                    document.getElementById('screenShareBtn').addEventListener('click', toggleScreenShare);
                     document.getElementById('endCallBtn').addEventListener('click', endRealCall);
                 }
             }
@@ -2484,21 +1770,16 @@ Critical Functions:
                             widgetScreenShareBtn.className = 'w-10 h-10 bg-red-100 hover:bg-red-200 rounded-full flex items-center justify-center transition-colors';
                         }
                         
-                        // Replace video track with screen track or add new video track
-                        if (peerConnection) {
+                        // Replace video track with screen track
+                        if (peerConnection && localStream) {
                             const videoTrack = screenStream.getVideoTracks()[0];
-                            let sender = peerConnection.getSenders().find(s => 
+                            const sender = peerConnection.getSenders().find(s => 
                                 s.track && s.track.kind === 'video'
                             );
                             
                             if (sender) {
-                                // Replace existing video track
                                 sender.replaceTrack(videoTrack);
                                 console.log('Screen sharing track replaced successfully');
-                            } else {
-                                // Add new video track for voice calls
-                                sender = peerConnection.addTrack(videoTrack, screenStream);
-                                console.log('Screen sharing track added as new video track');
                             }
                         }
                         
@@ -2537,23 +1818,16 @@ Critical Functions:
                     widgetScreenShareBtn.className = 'w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors';
                 }
                 
-                // Restore original video track or remove added track
-                if (peerConnection) {
+                // Restore original video track
+                if (peerConnection && localStream) {
+                    const videoTrack = localStream.getVideoTracks()[0];
                     const sender = peerConnection.getSenders().find(s => 
                         s.track && s.track.kind === 'video'
                     );
                     
-                    if (sender) {
-                        if (localStream && localStream.getVideoTracks().length > 0) {
-                            // Restore original video track if it exists
-                            const videoTrack = localStream.getVideoTracks()[0];
-                            sender.replaceTrack(videoTrack);
-                            console.log('Original video track restored');
-                        } else {
-                            // Remove the added video track for voice calls
-                            peerConnection.removeTrack(sender);
-                            console.log('Added video track removed for voice call');
-                        }
+                    if (sender && videoTrack) {
+                        sender.replaceTrack(videoTrack);
+                        console.log('Original video track restored');
                     }
                 }
                 
@@ -2823,11 +2097,6 @@ Critical Functions:
                         await window.peerConnection.setRemoteDescription(answer);
                         console.log('✅ Agent answer set as remote description');
                         
-                        // Debug SDP for codec information
-                        console.log('🔍 SDP Answer details:');
-                        console.log('🔍 Audio codecs in answer:', answer.sdp.match(/m=audio.*\r\n/g));
-                        console.log('🔍 RTP map lines in answer:', answer.sdp.match(/a=rtpmap:.*\r\n/g));
-                        
                         // Flush any queued ICE candidates now that remote description is set
                         flushQueuedRemoteCandidates();
                         
@@ -3058,9 +2327,6 @@ Critical Functions:
 
     <!-- WebSocket Client -->
     <script src="js/websocket-client.js?v=2"></script>
-    
-    <!-- Enhanced Widget Script -->
-    <script src="js/widget-enhancements.js"></script>
     
     <!-- IVR System JavaScript -->
     <script>
@@ -3536,48 +2802,6 @@ Critical Functions:
                 updateIvrStatus('Error', 'Please try again or contact support.');
             }
         }
-            // Audio monitoring function
-            window.monitorAudio = function() {
-                const remoteAudio = document.getElementById('remoteAudio');
-                if (remoteAudio && remoteAudio.srcObject) {
-                    console.log('🔍 Audio monitoring:');
-                    console.log('🔍 - Audio element exists:', !!remoteAudio);
-                    console.log('🔍 - Audio srcObject exists:', !!remoteAudio.srcObject);
-                    console.log('🔍 - Audio paused:', remoteAudio.paused);
-                    console.log('🔍 - Audio muted:', remoteAudio.muted);
-                    console.log('🔍 - Audio volume:', remoteAudio.volume);
-                    console.log('🔍 - Audio readyState:', remoteAudio.readyState);
-                    console.log('🔍 - Audio currentTime:', remoteAudio.currentTime);
-                    console.log('🔍 - Audio duration:', remoteAudio.duration);
-                    
-                    // Check if there are audio tracks
-                    const audioTracks = remoteAudio.srcObject.getAudioTracks();
-                    console.log('🔍 - Audio tracks count:', audioTracks.length);
-                    if (audioTracks.length > 0) {
-                        console.log('🔍 - First audio track enabled:', audioTracks[0].enabled);
-                        console.log('🔍 - First audio track muted:', audioTracks[0].muted);
-                        console.log('🔍 - First audio track readyState:', audioTracks[0].readyState);
-                    }
-                } else {
-                    console.log('❌ No remote audio element or stream found');
-                }
-            };
-            
-            // Audio recovery function
-            window.recoverAudio = function() {
-                const remoteAudio = document.getElementById('remoteAudio');
-                if (remoteAudio) {
-                    console.log('🔧 Attempting audio recovery...');
-                    remoteAudio.muted = false;
-                    remoteAudio.volume = 1.0;
-                    remoteAudio.load();
-                    remoteAudio.play().then(() => {
-                        console.log('✅ Audio recovery successful');
-                    }).catch(e => {
-                        console.error('❌ Audio recovery failed:', e);
-                    });
-                }
-            };
-        </script>
-    </body>
+    </script>
+</body>
 </html>

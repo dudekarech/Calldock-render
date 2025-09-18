@@ -1,21 +1,4 @@
 <!DOCTYPE html>
-<!-- 
-================================================================================
-CHECKPOINT: 2-WAY AUDIO WORKING - DO NOT MODIFY CORE CALL FUNCTIONALITY
-================================================================================
-Date: 2025-08-30
-Status: ✅ WORKING - 2-way audio calls established successfully
-Critical Functions:
-- WebRTC offer storage and processing
-- Agent call answering workflow
-- WebRTC answer creation and sending
-- ICE candidate handling
-
-⚠️  WARNING: This file contains the core SaaS call functionality.
-    Any modifications to WebRTC or WebSocket handling must be tested
-    thoroughly to ensure audio calls continue working.
-================================================================================
--->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -613,22 +596,19 @@ Critical Functions:
                     });
                     console.log('✅ Agent media access granted');
                     
-                    // Get optimized ICE servers with dynamic API fetching
-                    console.log('🔍 Fetching optimized ICE servers...');
-                    const optimizedIceServers = await getOptimizedIceServers();
-                    console.log('✅ Using optimized ICE servers:', optimizedIceServers.length, 'servers');
-
                     // Create WebRTC peer connection with TURN-only configuration
                     peerConnection = new RTCPeerConnection({
-                        iceServers: optimizedIceServers,
-                        iceCandidatePoolSize: 30,
-                        iceTransportPolicy: 'relay', // Force TURN-only mode for guaranteed connectivity
-                        bundlePolicy: 'max-bundle',
-                        rtcpMuxPolicy: 'require',
-                        // Enhanced TURN server configuration
-                        iceCandidateTimeout: 15000, // 15 seconds timeout for TURN
-                        iceGatheringTimeout: 20000, // 20 seconds for gathering
-                        sdpSemantics: 'unified-plan'
+                        iceServers: [
+                            {
+                                urls: [
+                                    'turn:102.68.86.104:3478?transport=udp',
+                                    'turn:102.68.86.104:3478?transport=tcp'
+                                ],
+                                username: 'mindfirm',
+                                credential: 'superSecret123'
+                            }
+                        ],
+                        iceTransportPolicy: 'relay' // Force TURN-only mode for guaranteed connectivity
                     });
                     console.log('✅ WebRTC peer connection created');
                     
@@ -643,108 +623,22 @@ Critical Functions:
                         console.log('📞 Received remote stream from caller:', event.streams[0]);
                         remoteStream = event.streams[0];
                         
-                        // Validate audio tracks in the stream
-                        const audioTracks = remoteStream.getAudioTracks();
-                        console.log('🔍 Audio tracks in remote stream:', audioTracks.length);
-                        if (audioTracks.length > 0) {
-                            console.log('🔍 First audio track:', audioTracks[0]);
-                            console.log('🔍 Audio track enabled:', audioTracks[0].enabled);
-                            console.log('🔍 Audio track muted:', audioTracks[0].muted);
-                            console.log('🔍 Audio track readyState:', audioTracks[0].readyState);
-                            
-                            // CRITICAL: Unmute the audio track if it's muted
-                            if (audioTracks[0].muted) {
-                                console.log('🔧 Unmuting audio track...');
-                                audioTracks[0].enabled = true;
-                                // Note: muted property is read-only, but enabled controls playback
-                                console.log('✅ Audio track enabled:', audioTracks[0].enabled);
-                            }
-                        }
-                        
-                        // Handle remote audio with enhanced configuration
+                        // Handle remote audio
                         const remoteAudio = document.createElement('audio');
                         remoteAudio.id = 'remoteAudio';
                         remoteAudio.srcObject = remoteStream;
                         remoteAudio.autoplay = true;
-                        remoteAudio.playsInline = true; // Important for mobile
                         remoteAudio.volume = 1.0;
                         remoteAudio.muted = false;
                         remoteAudio.controls = false;
                         
-                        // Add comprehensive audio event listeners
-                        remoteAudio.addEventListener('loadstart', () => {
-                            console.log('🔍 Audio loadstart event');
-                        });
-                        
-                        remoteAudio.addEventListener('loadeddata', () => {
-                            console.log('🔍 Audio loadeddata event');
-                        });
-                        
-                        remoteAudio.addEventListener('canplay', () => {
-                            console.log('🔍 Audio canplay event');
-                        });
-                        
-                        remoteAudio.addEventListener('play', () => {
-                            console.log('✅ Audio play event - audio is now playing');
-                        });
-                        
-                        remoteAudio.addEventListener('pause', () => {
-                            console.log('⚠️ Audio pause event - audio was paused');
-                        });
-                        
-                        remoteAudio.addEventListener('ended', () => {
-                            console.log('🔍 Audio ended event');
-                        });
-                        
-                        remoteAudio.addEventListener('error', (e) => {
-                            console.error('❌ Audio error event:', e);
-                        });
-                        
-                        remoteAudio.addEventListener('stalled', () => {
-                            console.warn('⚠️ Audio stalled event');
-                        });
-                        
-                        remoteAudio.addEventListener('suspend', () => {
-                            console.warn('⚠️ Audio suspend event');
-                        });
-                        
-                        remoteAudio.addEventListener('waiting', () => {
-                            console.warn('⚠️ Audio waiting event');
-                        });
-                        
-                        remoteAudio.addEventListener('volumechange', () => {
-                            console.log('🔍 Audio volume changed:', remoteAudio.volume, 'muted:', remoteAudio.muted);
+                        // Force play to overcome autoplay restrictions
+                        remoteAudio.play().catch(e => {
+                            console.log('⚠️ Audio autoplay blocked, user must interact first');
                         });
                         
                         document.body.appendChild(remoteAudio);
-                        console.log('✅ Remote audio element created and configured');
-                        
-                        // Attempt to play with retry mechanism
-                        let playAttempts = 0;
-                        const maxPlayAttempts = 5;
-                        
-                        const attemptPlay = () => {
-                            playAttempts++;
-                            console.log(`🔍 Attempting to play audio (attempt ${playAttempts}/${maxPlayAttempts})`);
-                            
-                            remoteAudio.play().then(() => {
-                                console.log('✅ Audio playback started successfully');
-                            }).catch(e => {
-                                console.error(`❌ Audio play attempt ${playAttempts} failed:`, e);
-                                
-                                if (playAttempts < maxPlayAttempts) {
-                                    console.log(`🔄 Retrying audio play in 1 second...`);
-                                    setTimeout(attemptPlay, 1000);
-                                } else {
-                                    console.error('❌ Max audio play attempts reached');
-                                    // Show user interaction prompt
-                                    showAudioEnablePrompt();
-                                }
-                            });
-                        };
-                        
-                        // Start playing
-                        attemptPlay();
+                        console.log('✅ Remote audio element created and playing');
                         
                         // Handle remote video for video calls
                         if (callType === 'video') {
@@ -752,96 +646,14 @@ Critical Functions:
                         }
                     };
                     
-                    // Handle ICE candidates with enhanced debugging
+                    // Handle ICE candidates
                     peerConnection.onicecandidate = (event) => {
                         if (event.candidate) {
                             console.log('📤 ICE candidate generated:', event.candidate);
-                            console.log('🔍 Candidate type:', event.candidate.type, 'protocol:', event.candidate.protocol, 'address:', event.candidate.address);
-                            
-                            // Log candidate priority for debugging
-                            console.log('🔍 Candidate priority:', event.candidate.priority);
-                            
-                            // Check if this is a TURN candidate (relay)
-                            if (event.candidate.type === 'relay') {
-                                console.log('✅ TURN candidate generated - NAT traversal should work');
-                                console.log('🔍 TURN server:', event.candidate.relatedAddress, ':', event.candidate.relatedPort);
-                            } else if (event.candidate.type === 'srflx') {
-                                console.log('✅ STUN candidate generated - public IP discovered');
-                                console.log('🔍 Public IP:', event.candidate.address, ':', event.candidate.port);
-                            } else if (event.candidate.type === 'host') {
-                                console.log('🔍 Host candidate generated - local network');
-                            }
-                            
                             // Send ICE candidate to caller via WebSocket
                             if (websocketClient) {
                                 websocketClient.sendICECandidate('anonymous', event.candidate, callId);
-                                console.log('📤 ICE candidate sent to caller');
                             }
-                        } else {
-                            console.log('✅ ICE gathering complete - no more candidates');
-                            console.log('🔍 Total candidates gathered:', peerConnection.localDescription ? 'Yes' : 'No');
-                        }
-                    };
-                    
-                    // Handle ICE connection state changes with detailed logging
-                    peerConnection.oniceconnectionstatechange = (event) => {
-                        console.log('🔍 ICE connection state:', peerConnection.iceConnectionState);
-                        
-                        if (peerConnection.iceConnectionState === 'connected' || peerConnection.iceConnectionState === 'completed') {
-                            console.log('✅ ICE connection established successfully');
-                            
-                            // Log successful candidate pair
-                            peerConnection.getStats().then(stats => {
-                                stats.forEach(report => {
-                                    if (report.type === 'candidate-pair' && report.state === 'succeeded') {
-                                        console.log('✅ Successful candidate pair:', {
-                                            localCandidate: report.localCandidateId,
-                                            remoteCandidate: report.remoteCandidateId,
-                                            priority: report.priority,
-                                            nominated: report.nominated
-                                        });
-                                    }
-                                });
-                            });
-                            
-                            // Start WebRTC stats monitoring for audio packet flow
-                            startWebRTCStatsMonitoring();
-                        } else if (peerConnection.iceConnectionState === 'disconnected' || peerConnection.iceConnectionState === 'failed') {
-                            console.log('❌ ICE connection failed or disconnected');
-                            console.log('🔍 ICE connection failed - checking if we can recover...');
-                            
-                            // Check ICE connection stats on failure
-                            peerConnection.getStats().then(stats => {
-                                console.log('🔍 ICE connection stats on failure:');
-                                let hasSuccessfulPair = false;
-                                let hasTurnCandidate = false;
-                                
-                                stats.forEach(report => {
-                                    if (report.type === 'candidate-pair') {
-                                        console.log(`🔍 Candidate pair state: ${report.state}`, {
-                                            local: report.localCandidateId,
-                                            remote: report.remoteCandidateId,
-                                            priority: report.priority
-                                        });
-                                        if (report.state === 'succeeded') hasSuccessfulPair = true;
-                                    } else if (report.type === 'local-candidate' && report.candidateType === 'relay') {
-                                        hasTurnCandidate = true;
-                                        console.log('✅ TURN candidate found:', report.url);
-                                    }
-                                });
-                                
-                                if (hasSuccessfulPair) {
-                                    console.log('✅ Successful candidate pair found but ICE still failed');
-                                } else {
-                                    console.log('❌ No successful candidate pairs found');
-                                }
-                                
-                                if (hasTurnCandidate) {
-                                    console.log('✅ TURN candidates available - NAT traversal should work');
-                                } else {
-                                    console.log('❌ No TURN candidates - NAT traversal may fail');
-                                }
-                            });
                         }
                     };
                     
@@ -911,85 +723,6 @@ Critical Functions:
                     alert('Could not access microphone/camera. Please check permissions.');
                 }
             }
-            
-            // Audio enable prompt function
-            function showAudioEnablePrompt() {
-                const existingPrompt = document.getElementById('audio-enable-prompt');
-                if (existingPrompt) return;
-
-                const promptDiv = document.createElement('div');
-                promptDiv.id = 'audio-enable-prompt';
-                promptDiv.style.cssText = `
-                    position: fixed;
-                    bottom: 20px;
-                    left: 50%;
-                    transform: translateX(-50%);
-                    background-color: #ef4444;
-                    color: white;
-                    padding: 12px 20px;
-                    border-radius: 8px;
-                    font-family: sans-serif;
-                    font-size: 14px;
-                    cursor: pointer;
-                    z-index: 9999;
-                    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-                    animation: fadeInOut 10s ease-in-out infinite;
-                `;
-                promptDiv.innerHTML = `
-                    Click here to enable audio <i class="fas fa-volume-up ml-2"></i>
-                `;
-                promptDiv.onclick = () => {
-                    const remoteAudio = document.getElementById('remoteAudio');
-                    if (remoteAudio) {
-                        remoteAudio.muted = false;
-                        remoteAudio.volume = 1.0;
-                        remoteAudio.play().then(() => {
-                            console.log('✅ Audio enabled by user interaction');
-                            promptDiv.remove();
-                        }).catch(e => {
-                            console.error('❌ Audio still failed after user interaction:', e);
-                        });
-                    }
-                };
-
-                document.body.appendChild(promptDiv);
-
-                const style = document.createElement('style');
-                style.innerHTML = `
-                    @keyframes fadeInOut {
-                        0%, 100% { opacity: 0.8; }
-                        50% { opacity: 1; }
-                    }
-                `;
-                document.head.appendChild(style);
-            }
-            
-            // Audio monitoring function
-            window.monitorAudio = function() {
-                const remoteAudio = document.getElementById('remoteAudio');
-                if (remoteAudio && remoteAudio.srcObject) {
-                    console.log('🔍 Audio monitoring:');
-                    console.log('🔍 - Audio element exists:', !!remoteAudio);
-                    console.log('🔍 - Audio srcObject exists:', !!remoteAudio.srcObject);
-                    console.log('🔍 - Audio paused:', remoteAudio.paused);
-                    console.log('🔍 - Audio muted:', remoteAudio.muted);
-                    console.log('🔍 - Audio volume:', remoteAudio.volume);
-                    console.log('🔍 - Audio readyState:', remoteAudio.readyState);
-                    console.log('🔍 - Audio currentTime:', remoteAudio.currentTime);
-                    console.log('🔍 - Audio duration:', remoteAudio.duration);
-                    
-                    // Check if there are audio tracks
-                    const audioTracks = remoteAudio.srcObject.getAudioTracks();
-                    console.log('🔍 - Audio tracks count:', audioTracks.length);
-                    if (audioTracks.length > 0) {
-                        console.log('🔍 - First audio track enabled:', audioTracks[0].enabled);
-                        console.log('🔍 - First audio track muted:', audioTracks[0].muted);
-                        console.log('🔍 - First audio track readyState:', audioTracks[0].readyState);
-                    }
-                } else {
-                    console.log('❌ No remote audio element or stream found');
-                }
-            };
             
             function updateCurrentCallSection(callId, callerName, callType) {
                 const currentCallInfo = document.getElementById('currentCallInfo');
@@ -1417,21 +1150,16 @@ Critical Functions:
                         screenShareBtn.innerHTML = '<i class="fas fa-stop mr-2"></i>Stop Sharing';
                         screenShareBtn.className = 'bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700';
                         
-                        // Replace video track with screen track or add new video track
-                        if (peerConnection) {
+                        // Replace video track with screen track
+                        if (peerConnection && localStream) {
                             const videoTrack = screenStream.getVideoTracks()[0];
-                            let sender = peerConnection.getSenders().find(s => 
+                            const sender = peerConnection.getSenders().find(s => 
                                 s.track && s.track.kind === 'video'
                             );
                             
                             if (sender) {
-                                // Replace existing video track
                                 sender.replaceTrack(videoTrack);
                                 console.log('Screen sharing track replaced successfully');
-                            } else {
-                                // Add new video track for voice calls
-                                sender = peerConnection.addTrack(videoTrack, screenStream);
-                                console.log('Screen sharing track added as new video track');
                             }
                         }
                         
@@ -1462,23 +1190,16 @@ Critical Functions:
                 screenShareBtn.innerHTML = '<i class="fas fa-desktop mr-2"></i>Share Screen';
                 screenShareBtn.className = 'bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700';
                 
-                // Restore original video track or remove added track
-                if (peerConnection) {
+                // Restore original video track
+                if (peerConnection && localStream) {
+                    const videoTrack = localStream.getVideoTracks()[0];
                     const sender = peerConnection.getSenders().find(s => 
                         s.track && s.track.kind === 'video'
                     );
                     
-                    if (sender) {
-                        if (localStream && localStream.getVideoTracks().length > 0) {
-                            // Restore original video track if it exists
-                            const videoTrack = localStream.getVideoTracks()[0];
-                            sender.replaceTrack(videoTrack);
-                            console.log('Original video track restored');
-                        } else {
-                            // Remove the added video track for voice calls
-                            peerConnection.removeTrack(sender);
-                            console.log('Added video track removed for voice call');
-                        }
+                    if (sender && videoTrack) {
+                        sender.replaceTrack(videoTrack);
+                        console.log('Original video track restored');
                     }
                 }
                 
@@ -1680,165 +1401,6 @@ Critical Functions:
             });
             header.querySelector('.flex').appendChild(refreshButton);
 
-            // Function to fetch Xirsys TURN server credentials via API
-            async function fetchXirsysIceServers() {
-                try {
-                    console.log('🔍 Fetching Xirsys TURN server credentials...');
-                    
-                    const response = await fetch("https://global.xirsys.net/_turn/calldocker", {
-                        method: "PUT",
-                        headers: {
-                            "Authorization": "Basic " + btoa("mindfirmke:326c5e38-92e6-11f0-bfa5-0242ac130003"),
-                            "Content-Type": "application/json"
-                        },
-                        body: JSON.stringify({ format: "urls" })
-                    });
-                    
-                    console.log('📡 Xirsys API Response status:', response.status);
-                    
-                    if (!response.ok) {
-                        const errorText = await response.text();
-                        console.error('❌ Xirsys API Error response:', errorText);
-                        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
-                    }
-                    
-                    const data = await response.json();
-                    console.log('✅ Xirsys ICE data:', data);
-                    
-                    const iceServers = data.v?.iceServers || [];
-                    console.log('✅ Xirsys TURN credentials fetched successfully:', iceServers);
-                    return iceServers;
-                } catch (error) {
-                    console.error('❌ Failed to fetch Xirsys ICE servers:', error);
-                    return [];
-                }
-            }
-
-            // Function to get Xirsys TURN servers
-            function getXirsysTurnServers() {
-                return [
-                    // Xirsys STUN server
-                    { urls: 'stun:jb-turn1.xirsys.com' },
-                    
-                    // Xirsys TURN servers with multiple protocols
-                    {
-                        username: 'WA8UHjXlU083XYyPRd9ut7mx4DZR0SgfjhY6Bkm_VoNtSN8LAKUBdV-1fhKUDqRvAAAAAGjJOhJtaW5kZmlybWtl',
-                        credential: 'db2dbf58-92e6-11f0-a38a-0242ac120004',
-                        urls: [
-                            'turn:jb-turn1.xirsys.com:80?transport=udp',
-                            'turn:jb-turn1.xirsys.com:3478?transport=udp',
-                            'turn:jb-turn1.xirsys.com:80?transport=tcp',
-                            'turn:jb-turn1.xirsys.com:3478?transport=tcp',
-                            'turns:jb-turn1.xirsys.com:443?transport=tcp',
-                            'turns:jb-turn1.xirsys.com:5349?transport=tcp'
-                        ]
-                    }
-                ];
-            }
-
-            // Function to get Metered.ca static TURN servers as fallback
-            function getMeteredStaticServers() {
-                return [
-                    // STUN servers
-                    {
-                        urls: "stun:stun.l.google.com:19302",
-                    },
-                    {
-                        urls: "stun:stun1.l.google.com:19302",
-                    },
-                    {
-                        urls: "stun:stun2.l.google.com:19302",
-                    },
-                    {
-                        urls: "stun:stun3.l.google.com:19302",
-                    },
-                    {
-                        urls: "stun:stun4.l.google.com:19302",
-                    },
-                    {
-                        urls: "stun:stun.cloudflare.com:3478",
-                    },
-                    {
-                        urls: "stun:stun.relay.metered.ca:80",
-                    }
-                ];
-            }
-
-            // Function to get optimized ICE servers with dynamic API fetching
-            // TURN-only ICE servers configuration for guaranteed 2-way audio
-            async function getOptimizedIceServers() {
-                console.log('🔍 Using TURN-only configuration for guaranteed 2-way audio...');
-                
-                // TURN-only configuration - forces all traffic through reliable TURN server
-                // This ensures 2-way audio works across all NATs and firewalls
-                const iceServers = [
-                    {
-                        urls: [
-                            'turn:102.68.86.104:3478?transport=udp',
-                            'turn:102.68.86.104:3478?transport=tcp'
-                        ],
-                        username: 'mindfirm',
-                        credential: 'superSecret123'
-                    }
-                ];
-                
-                console.log('🔍 TURN-only ICE servers configuration:', iceServers.length, 'servers');
-                console.log('🔍 Using TURN-only mode for guaranteed 2-way audio across NATs/firewalls');
-                console.log('🔍 All media will be relayed through TURN server: 102.68.86.104:3478');
-                return iceServers;
-            }
-
-            // Function to start WebRTC stats monitoring for audio packet flow
-            function startWebRTCStatsMonitoring() {
-                if (window.statsInterval) {
-                    clearInterval(window.statsInterval);
-                }
-                
-                window.statsInterval = setInterval(async () => {
-                    if (peerConnection && peerConnection.connectionState === 'connected') {
-                        try {
-                            const stats = await peerConnection.getStats();
-                            let audioPacketsReceived = 0;
-                            let audioBytesReceived = 0;
-                            let audioPacketsSent = 0;
-                            let audioBytesSent = 0;
-                            
-                            stats.forEach(report => {
-                                if (report.type === 'inbound-rtp' && report.kind === 'audio') {
-                                    audioPacketsReceived = report.packetsReceived || 0;
-                                    audioBytesReceived = report.bytesReceived || 0;
-                                    console.log('🔍 Inbound audio stats:', {
-                                        packetsReceived: audioPacketsReceived,
-                                        bytesReceived: audioBytesReceived,
-                                        packetsLost: report.packetsLost || 0,
-                                        jitter: report.jitter || 0
-                                    });
-                                } else if (report.type === 'outbound-rtp' && report.kind === 'audio') {
-                                    audioPacketsSent = report.packetsSent || 0;
-                                    audioBytesSent = report.bytesSent || 0;
-                                    console.log('🔍 Outbound audio stats:', {
-                                        packetsSent: audioPacketsSent,
-                                        bytesSent: audioBytesSent,
-                                        packetsLost: report.packetsLost || 0
-                                    });
-                                }
-                            });
-                            
-                            if (audioPacketsReceived === 0 && audioBytesReceived === 0) {
-                                console.log('⚠️ No audio packets received - audio may not be flowing');
-                            } else {
-                                console.log('✅ Audio packets flowing:', {
-                                    received: audioPacketsReceived,
-                                    sent: audioPacketsSent
-                                });
-                            }
-                        } catch (error) {
-                            console.log('❌ Error getting WebRTC stats:', error);
-                        }
-                    }
-                }, 3000); // Check every 3 seconds
-            }
-
             // WebRTC test function
             async function testWebRTC() {
                 try {
@@ -2031,34 +1593,15 @@ Critical Functions:
                                      e.preventDefault();
                                  });
                                  
-                                 // Add additional protection against accidental removal
-                                 remoteVideo.setAttribute('data-protected', 'true');
-                                 remoteVideo.addEventListener('DOMNodeRemoved', (e) => {
-                                     console.log('Video element being removed from DOM, preventing removal');
-                                     e.preventDefault();
-                                     e.stopPropagation();
-                                 });
-                                 
                                  console.log('Remote video element created and added to UI');
                              } else {
                                  console.log('Video containers not ready yet, retrying in 100ms...');
-                                 // Increase retry interval and add max retries to prevent infinite loops
-                                 if (!window.videoSetupRetries) window.videoSetupRetries = 0;
-                                 if (window.videoSetupRetries < 50) { // Max 5 seconds of retries
-                                     window.videoSetupRetries++;
-                                     setTimeout(setupRemoteVideo, 100);
-                                 } else {
-                                     console.error('Video containers not ready after 5 seconds, giving up');
-                                     window.videoSetupRetries = 0;
-                                 }
+                                 setTimeout(setupRemoteVideo, 100);
                              }
                          };
                          
-                         // Start setting up remote video with better timing
-                         // Wait a bit longer to ensure UI is fully updated
-                         setTimeout(() => {
-                             setupRemoteVideo();
-                         }, 200);
+                         // Start setting up remote video
+                         setupRemoteVideo();
                      };
 
                     // Handle ICE candidates
@@ -2232,10 +1775,10 @@ Critical Functions:
                             <button id="videoBtn" class="bg-purple-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-purple-700">
                                 <i class="fas fa-video mr-2"></i>Video Off
                             </button>
-                            ` : ''}
                             <button id="screenShareBtn" class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700">
                                 <i class="fas fa-desktop mr-2"></i>Share Screen
                             </button>
+                            ` : ''}
                             <button id="holdBtn" class="bg-yellow-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-700">
                                 <i class="fas fa-pause mr-2"></i>Hold
                             </button>

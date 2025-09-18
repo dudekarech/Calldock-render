@@ -1,38 +1,13 @@
-/*
-================================================================================
-CHECKPOINT: 2-WAY AUDIO WORKING - DO NOT MODIFY CORE CALL FUNCTIONALITY
-================================================================================
-Date: 2025-08-30
-Status: ✅ WORKING - 2-way audio calls established successfully
-Critical Functions:
-- WebSocket room management for agents and callers
-- WebRTC offer/answer routing between rooms
-- JWT authentication for secure connections
-- Real-time signaling for WebRTC establishment
-
-⚠️  WARNING: This file contains the core SaaS call functionality.
-    Any modifications to WebSocket handling must be tested
-    thoroughly to ensure audio calls continue working.
-================================================================================
-*/
-
 const WebSocket = require('ws');
 const http = require('http');
 const url = require('url');
 const jwt = require('jsonwebtoken');
 
 class WebSocketServer {
-    constructor(httpServer = null, port = 8081) {
+    constructor(port = 8081) {
         this.port = port;
-        
-        // Use provided HTTP server or create new one
-        if (httpServer) {
-            this.server = httpServer;
-            this.wss = new WebSocket.Server({ server: this.server, path: '/ws' });
-        } else {
-            this.server = http.createServer();
-            this.wss = new WebSocket.Server({ server: this.server });
-        }
+        this.server = http.createServer();
+        this.wss = new WebSocket.Server({ server: this.server });
         
         // Store active connections
         this.connections = new Map(); // userId -> WebSocket
@@ -40,11 +15,7 @@ class WebSocketServer {
         this.userRooms = new Map(); // userId -> roomId
         
         this.setupWebSocket();
-        
-        // Only start if we created our own server
-        if (!httpServer) {
-            this.start();
-        }
+        this.start();
     }
     
     setupWebSocket() {
@@ -455,16 +426,10 @@ class WebSocketServer {
     }
     
     start() {
-        // Only start listening if we created our own server
-        if (this.server.listening === false) {
-            this.server.listen(this.port, () => {
-                console.log(`🚀 WebSocket server running on port ${this.port}`);
-                console.log(`📡 Ready for real-time WebRTC signaling`);
-            });
-        } else {
-            console.log(`🚀 WebSocket server attached to existing HTTP server`);
-            console.log(`📡 Ready for real-time WebRTC signaling on /ws path`);
-        }
+        this.server.listen(this.port, () => {
+            console.log(`🚀 WebSocket server running on port ${this.port}`);
+            console.log(`📡 Ready for real-time WebRTC signaling`);
+        });
     }
     
     stop() {

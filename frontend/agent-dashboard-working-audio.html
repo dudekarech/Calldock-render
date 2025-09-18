@@ -596,20 +596,19 @@
                     });
                     console.log('✅ Agent media access granted');
                     
-                    // Create WebRTC peer connection
+                    // Create WebRTC peer connection with TURN-only configuration
                     peerConnection = new RTCPeerConnection({
                         iceServers: [
-                            { urls: 'stun:stun.l.google.com:19302' },
                             {
                                 urls: [
-                                    'stun:102.68.86.104:3478',
                                     'turn:102.68.86.104:3478?transport=udp',
                                     'turn:102.68.86.104:3478?transport=tcp'
                                 ],
                                 username: 'mindfirm',
                                 credential: 'superSecret123'
                             }
-                        ]
+                        ],
+                        iceTransportPolicy: 'relay' // Force TURN-only mode for guaranteed connectivity
                     });
                     console.log('✅ WebRTC peer connection created');
                     

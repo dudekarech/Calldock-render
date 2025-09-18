@@ -62,19 +62,9 @@ impl Config {
             },
             webrtc: WebRTCConfig {
                 ice_servers: vec![
-                    IceServerConfig {
-                        urls: vec!["stun:stun.l.google.com:19302".to_string()],
-                        username: None,
-                        credential: None,
-                    },
-                    IceServerConfig {
-                        urls: vec!["stun:stun1.l.google.com:19302".to_string()],
-                        username: None,
-                        credential: None,
-                    },
+                    // TURN-only configuration for guaranteed 2-way audio
                     IceServerConfig {
                         urls: vec![
-                            "stun:102.68.86.104:3478".to_string(),
                             "turn:102.68.86.104:3478?transport=udp".to_string(),
                             "turn:102.68.86.104:3478?transport=tcp".to_string(),
                         ],

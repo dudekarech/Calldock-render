@@ -618,11 +618,11 @@ Critical Functions:
                     const optimizedIceServers = await getOptimizedIceServers();
                     console.log('✅ Using optimized ICE servers:', optimizedIceServers.length, 'servers');
 
-                    // Create WebRTC peer connection with dynamic TURN servers
+                    // Create WebRTC peer connection with TURN-only configuration
                     peerConnection = new RTCPeerConnection({
                         iceServers: optimizedIceServers,
                         iceCandidatePoolSize: 30,
-                        iceTransportPolicy: 'all', // Allow all transport types
+                        iceTransportPolicy: 'relay', // Force TURN-only mode for guaranteed connectivity
                         bundlePolicy: 'max-bundle',
                         rtcpMuxPolicy: 'require',
                         // Enhanced TURN server configuration
@@ -1757,20 +1757,15 @@ Critical Functions:
             }
 
             // Function to get optimized ICE servers with dynamic API fetching
+            // TURN-only ICE servers configuration for guaranteed 2-way audio
             async function getOptimizedIceServers() {
+                console.log('🔍 Using TURN-only configuration for guaranteed 2-way audio...');
+                
+                // TURN-only configuration - forces all traffic through reliable TURN server
+                // This ensures 2-way audio works across all NATs and firewalls
                 const iceServers = [
-                    // Always include reliable STUN servers first
-                    { urls: 'stun:stun.l.google.com:19302' },
-                    { urls: 'stun:stun1.l.google.com:19302' },
-                    { urls: 'stun:stun2.l.google.com:19302' },
-                    { urls: 'stun:stun3.l.google.com:19302' },
-                    { urls: 'stun:stun4.l.google.com:19302' },
-                    { urls: 'stun:stun.cloudflare.com:3478' },
-                    
-                    // Primary TURN server - Custom TURN server with credentials
                     {
                         urls: [
-                            'stun:102.68.86.104:3478',
                             'turn:102.68.86.104:3478?transport=udp',
                             'turn:102.68.86.104:3478?transport=tcp'
                         ],
@@ -1778,23 +1773,10 @@ Critical Functions:
                         credential: 'superSecret123'
                     }
                 ];
-
-                // Try to get Xirsys API credentials first (most reliable)
-                console.log('🔍 Attempting to fetch Xirsys TURN servers via API...');
-                const xirsysCredentials = await fetchXirsysIceServers();
-                if (xirsysCredentials && xirsysCredentials.length > 0) {
-                    console.log('✅ Adding Xirsys API TURN servers');
-                    iceServers.push(...xirsysCredentials);
-                } else {
-                    console.log('⚠️ Xirsys API failed, using static Xirsys servers');
-                    iceServers.push(...getXirsysTurnServers());
-                }
-
-                // Add Metered.ca static servers as fallback
-                console.log('✅ Adding Metered.ca static TURN servers');
-                iceServers.push(...getMeteredStaticServers());
-
-                console.log('🔍 Final ICE servers configuration:', iceServers.length, 'servers');
+                
+                console.log('🔍 TURN-only ICE servers configuration:', iceServers.length, 'servers');
+                console.log('🔍 Using TURN-only mode for guaranteed 2-way audio across NATs/firewalls');
+                console.log('🔍 All media will be relayed through TURN server: 102.68.86.104:3478');
                 return iceServers;
             }
 

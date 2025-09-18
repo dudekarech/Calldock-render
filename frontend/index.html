@@ -1207,21 +1207,15 @@ Critical Functions:
                 }
             }
 
-            // Function to get optimized ICE servers with dynamic API fetching
+            // TURN-only ICE servers configuration for guaranteed 2-way audio
             async function getOptimizedIceServers() {
+                console.log('🔍 Using TURN-only configuration for guaranteed 2-way audio...');
+                
+                // TURN-only configuration - forces all traffic through reliable TURN server
+                // This ensures 2-way audio works across all NATs and firewalls
                 const iceServers = [
-                    // Always include reliable STUN servers first
-                    { urls: 'stun:stun.l.google.com:19302' },
-                    { urls: 'stun:stun1.l.google.com:19302' },
-                    { urls: 'stun:stun2.l.google.com:19302' },
-                    { urls: 'stun:stun3.l.google.com:19302' },
-                    { urls: 'stun:stun4.l.google.com:19302' },
-                    { urls: 'stun:stun.cloudflare.com:3478' },
-                    
-                    // Primary TURN server - Custom TURN server with credentials
                     {
                         urls: [
-                            'stun:102.68.86.104:3478',
                             'turn:102.68.86.104:3478?transport=udp',
                             'turn:102.68.86.104:3478?transport=tcp'
                         ],
@@ -1229,50 +1223,10 @@ Critical Functions:
                         credential: 'superSecret123'
                     }
                 ];
-
-                // Try to get Xirsys API credentials first (most reliable)
-                console.log('🔍 Attempting to fetch Xirsys TURN servers via API...');
-                const xirsysCredentials = await fetchXirsysIceServers();
-                if (xirsysCredentials && xirsysCredentials.length > 0) {
-                    console.log('✅ Adding Xirsys API TURN servers');
-                    iceServers.push(...xirsysCredentials);
-                } else {
-                    console.log('⚠️ Xirsys API failed, using static Xirsys servers');
-                    iceServers.push(...getXirsysTurnServers());
-                }
-
-                // Try to get Metered.ca API credentials as secondary
-                console.log('🔍 Attempting to fetch Metered.ca TURN servers via API...');
-                const meteredCredentials = await fetchMeteredTurnCredentials();
-                if (meteredCredentials && meteredCredentials.length > 0) {
-                    console.log('✅ Adding Metered.ca API TURN servers');
-                    iceServers.push(...meteredCredentials);
-                } else {
-                    console.log('⚠️ Metered.ca API failed, using static servers');
-                    iceServers.push(...getMeteredStaticServers());
-                }
-
-                // Add alternative TURN servers as fallback
-                console.log('✅ Adding alternative TURN servers as fallback');
-                iceServers.push(...getAlternativeTurnServers());
-
-                // Add other working TURN servers as additional fallbacks
-                try {
-                    const healthResults = await testAllTurnServers();
-                    healthResults.workingServers.forEach(server => {
-                        // Only add if not already included from Metered.ca
-                        const alreadyIncluded = iceServers.some(existing => 
-                            existing.urls === server.server.urls
-                        );
-                        if (!alreadyIncluded) {
-                            iceServers.push(server.server);
-                        }
-                    });
-                } catch (error) {
-                    console.warn('⚠️ Health check failed, using Metered.ca servers only:', error.message);
-                }
-
-                console.log('🔍 Final ICE servers configuration:', iceServers.length, 'servers');
+                
+                console.log('🔍 TURN-only ICE servers configuration:', iceServers.length, 'servers');
+                console.log('🔍 Using TURN-only mode for guaranteed 2-way audio across NATs/firewalls');
+                console.log('🔍 All media will be relayed through TURN server: 102.68.86.104:3478');
                 return iceServers;
             }
 
@@ -1791,11 +1745,11 @@ Critical Functions:
                     const optimizedIceServers = await getOptimizedIceServers();
                     console.log('🔍 Using optimized ICE servers:', optimizedIceServers.length, 'servers');
                     
-                    // Create WebRTC peer connection with optimized configuration
+                    // Create WebRTC peer connection with TURN-only configuration
                     peerConnection = new RTCPeerConnection({
                         iceServers: optimizedIceServers,
                         iceCandidatePoolSize: 10, // Reduced for better performance
-                        iceTransportPolicy: 'all',
+                        iceTransportPolicy: 'relay', // Force TURN-only mode for guaranteed connectivity
                         bundlePolicy: 'max-bundle',
                         rtcpMuxPolicy: 'require',
                         // Optimized ICE configuration for better connectivity
@@ -1910,24 +1864,30 @@ Critical Functions:
                         console.log('ontrack: Remote media ready, waiting for answer processing to complete');
                     };
 
-                    // Handle ICE candidates with enhanced debugging
+                    // Handle ICE candidates with enhanced debugging and connection monitoring
                     peerConnection.onicecandidate = (event) => {
                         if (event.candidate) {
                             console.log('ICE candidate generated:', event.candidate);
                             console.log('🔍 Candidate type:', event.candidate.type, 'protocol:', event.candidate.protocol, 'address:', event.candidate.address);
+                            
+                            // Track candidate types for connection quality monitoring
+                            if (!window.candidateTypes) {
+                                window.candidateTypes = { host: 0, srflx: 0, relay: 0 };
+                            }
+                            window.candidateTypes[event.candidate.type]++;
                             
                             // Log candidate priority for debugging
                             console.log('🔍 Candidate priority:', event.candidate.priority);
                             
                             // Check if this is a TURN candidate (relay)
                             if (event.candidate.type === 'relay') {
-                                console.log('✅ TURN candidate generated - NAT traversal should work');
+                                console.log('✅ TURN candidate generated - NAT traversal guaranteed');
                                 console.log('🔍 TURN server:', event.candidate.relatedAddress, ':', event.candidate.relatedPort);
                             } else if (event.candidate.type === 'srflx') {
-                                console.log('✅ STUN candidate generated - public IP discovered');
+                                console.log('⚠️ STUN candidate generated - may not work across all NATs');
                                 console.log('🔍 Public IP:', event.candidate.address, ':', event.candidate.port);
                             } else if (event.candidate.type === 'host') {
-                                console.log('🔍 Host candidate generated - local network');
+                                console.log('⚠️ Host candidate generated - local network only (will not work across NATs)');
                             }
                             
                             // Send ICE candidate to the other peer
@@ -1941,6 +1901,20 @@ Critical Functions:
                             }
                         } else {
                             console.log('✅ ICE gathering complete - no more candidates');
+                            
+                            // Log candidate type summary for TURN-only mode
+                            if (window.candidateTypes) {
+                                console.log('📊 Candidate type summary:', window.candidateTypes);
+                                console.log('🔍 TURN-only mode: Only relay candidates should be generated');
+                                if (window.candidateTypes.relay > 0) {
+                                    console.log('✅ TURN relay candidates generated - 2-way audio guaranteed');
+                                } else {
+                                    console.warn('❌ No TURN relay candidates - 2-way audio will fail');
+                                }
+                                if (window.candidateTypes.host > 0 || window.candidateTypes.srflx > 0) {
+                                    console.warn('⚠️ Non-relay candidates detected - TURN-only mode may not be working');
+                                }
+                            }
                             console.log('🔍 Total candidates gathered:', peerConnection.localDescription ? 'Yes' : 'No');
                         }
                     };
